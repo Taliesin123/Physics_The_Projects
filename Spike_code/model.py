@@ -53,14 +53,52 @@ def plot_Wigner_Semi_Circle():
     plt.plot(x, y, label='Wigner Semi-Circle', color='black')
     return None
 
-def plot_eigenvalue_distribution(M, N):
+def plot_eigenvalue_distribution(M, N, label = False):
     eigenvalues = np.linalg.eigvals(M)
-    plt.hist(eigenvalues, bins=100, density=True, alpha=0.5, label=f'n={N}')
+    label = f'n={N}' if label == 0 else '_nolegend_'
+    plt.hist(eigenvalues, bins=100, density=True, alpha=0.5, label=label)
     return None
 
-def plot_Max_Eigenval(lamba = 0):
-    if lamba >= 1:
-        plt.axvline(lamba + 1/lamba ,label='Maximum Eigenvalue', color='red')
-    else:
-        plt.axvline(2,label='Maximum Eigenvalue', color='red')
+
+def plot_Max_Eigenval(lamba = 1):
+    x = BBP(lamba)
+    plt.axvline(x,label=f'Max_Eigen_Val = {x:.2f}', color='red')
     return None
+
+def show():
+    plt.xlabel('Eigenvalue')
+    plt.ylabel('Density')
+    plt.show()
+    return None
+
+def BBP(lamba):
+        return np.where(lamba >= 1, lamba + 1/lamba, 2)
+
+
+def max_eigen_val(M):
+    eigenvalues = np.linalg.eigvals(M)
+    return np.max(eigenvalues)
+
+def first_look_at_BBP_transi(N = 500):
+    lambas = np.linspace(1, 6, 50)
+    x = []
+    std = []
+    x_axis = np.linspace(1, 6, 1000)
+    y_BBP = BBP(x_axis)
+    plt.plot(x_axis, y_BBP, label = 'Max(2, lambda + 1/lambda)')
+    plt.plot(x_axis, x_axis, label = 'y = x')
+    for lamba in lambas:
+        avg = []
+        for i in range(50):
+            avg.append(max_eigen_val(spiked_gaussian_matrix(N, lamba)))
+        x.append(np.mean(avg))
+        std.append(np.std(avg))
+    plt.scatter(lambas, x, label = 'Max_Eigen_val', color = 'red', marker='.')
+    plt.errorbar(lambas, std, color = 'blue')
+    plt.ylabel('Eigenvalue')
+    plt.xlabel('Lambda')
+    plt.legend()
+    plt.axvline(2, color = 'black')
+    plt.savefig('../Plots/Spike/BBP_transi_obs.png')
+    plt.title('Maximum Eigenvalue as a function of Lambda')
+    plt.show()
