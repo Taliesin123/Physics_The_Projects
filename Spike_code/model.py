@@ -46,3 +46,9 @@ def spectral_matrix(Y1, Y2, alpha):
 def spec(n, k1, k2, rho, alpha):
     Y1, Y2 = spiked_gaussian_matrix_with_correlated_spikes(n, k1, k2, rho)
     return spectral_matrix(Y1, Y2, alpha)
+
+def plotWigner():
+    x = np.linspace(-2, 2, 1000)
+    y = np.sqrt(4 - x**2) / (2 * np.pi)
+    plt.plot(x, y, label='Wigner Semi-Circle', color='black')   
+    return None
