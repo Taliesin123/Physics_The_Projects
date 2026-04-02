@@ -47,8 +47,20 @@ def spec(n, k1, k2, rho, alpha):
     Y1, Y2 = spiked_gaussian_matrix_with_correlated_spikes(n, k1, k2, rho)
     return spectral_matrix(Y1, Y2, alpha)
 
-def plotWigner():
+def plot_Wigner_Semi_Circle():
     x = np.linspace(-2, 2, 1000)
     y = np.sqrt(4 - x**2) / (2 * np.pi)
-    plt.plot(x, y, label='Wigner Semi-Circle', color='black')   
+    plt.plot(x, y, label='Wigner Semi-Circle', color='black')
+    return None
+
+def plot_eigenvalue_distribution(M, N):
+    eigenvalues = np.linalg.eigvals(M)
+    plt.hist(eigenvalues, bins=100, density=True, alpha=0.5, label=f'n={N}')
+    return None
+
+def plot_Max_Eigenval(lamba = 0):
+    if lamba >= 1:
+        plt.axvline(lamba + 1/lamba ,label='Maximum Eigenvalue', color='red')
+    else:
+        plt.axvline(2,label='Maximum Eigenvalue', color='red')
     return None
