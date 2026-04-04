@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 def gaussian_matrix(n):
     return np.random.normal(0, 1, (n, n))
@@ -31,21 +33,21 @@ def two_correlated_spikes(n, k1, k2, rho):
     v = v / np.linalg.norm(v)
     S1 = k1 * np.outer(u, u)
     S2 = k2 * np.outer(v, v)
-    return S1, S2
+    return S1, S2, u, v
 
 def spiked_gaussian_matrix_with_correlated_spikes(n, k1, k2, rho):
     G1, G2 = symmetric_gaussian_matrix(n), symmetric_gaussian_matrix(n)
-    S1, S2 = two_correlated_spikes(n, k1, k2, rho)
+    S1, S2, x1, x2 = two_correlated_spikes(n, k1, k2, rho)
     Y1 = G1 + S1
     Y2 = G2 + S2
-    return Y1, Y2
+    return Y1, Y2, x1, x2
 
 def spectral_matrix(Y1, Y2, alpha):
     return alpha * Y1 + np.sqrt(1 - alpha**2) * Y2
 
 def spec(n, k1, k2, rho, alpha):
-    Y1, Y2 = spiked_gaussian_matrix_with_correlated_spikes(n, k1, k2, rho)
-    return spectral_matrix(Y1, Y2, alpha)
+    Y1, Y2, x1, x2 = spiked_gaussian_matrix_with_correlated_spikes(n, k1, k2, rho)
+    return spectral_matrix(Y1, Y2, alpha), x1, x2
 
 def plot_Wigner_Semi_Circle():
     x = np.linspace(-2, 2, 1000)
@@ -102,3 +104,55 @@ def first_look_at_BBP_transi(N = 500):
     plt.savefig('../Plots/Spike/BBP_transi_obs.png')
     plt.title('Maximum Eigenvalue as a function of Lambda')
     plt.show()
+
+
+def overlap(D,x1,x2) :
+    eigenvalues, eigenvect = np.linalg.eig(D)
+
+    idx = np.argsort(eigenvalues)[::-1]
+
+    v1 = eigenvect[:, idx[0]] 
+    v2 = eigenvect[:, idx[1]]  
+
+    overlap1 = abs(np.dot(v1,x1))
+    overlap2 = abs(np.dot(v2,x2)) 
+    overlap2bis = abs(np.dot(v1,x2)) 
+    return overlap1, overlap2, overlap2bis
+
+
+def overlap_2spike_varyparam(vary_param, vary_values, M, n, k1, k2, rho, alpha, xlabel=None):
+
+    M1, M2, M2bis = [], [], []
+    
+    for val in vary_values:
+        params = {'n': n, 'k1': k1, 'k2': k2, 'rho': rho, 'alpha': alpha}
+        params[vary_param] = val
+        
+        over1, over2, over2bis = [], [], []
+        for _ in range(M):
+            D, x1, x2 = spec(params['n'], params['k1'], params['k2'], params['rho'], params['alpha'])
+            m1, m2, m2bis = overlap(D, x1, x2)
+            over1.append(m1)
+            over2.append(m2)
+            over2bis.append(m2bis)
+        
+        M1.append([np.mean(over1), np.std(over1)/np.sqrt(M)])
+        M2.append([np.mean(over2), np.std(over2)/np.sqrt(M)])
+        M2bis.append([np.mean(over2bis), np.std(over2bis)/np.sqrt(M)])
+    
+    M1, M2, M2bis = np.array(M1), np.array(M2), np.array(M2bis)
+    
+  
+    sns.set_theme(style="whitegrid", context="paper")
+    plt.errorbar(vary_values, M1[:,0], yerr=M1[:,1], label="x1.v1", capsize=2, linewidth=1)
+    plt.errorbar(vary_values, M2[:,0], yerr=M2[:,1], label="x2.v2", capsize=2, linewidth=1)
+    plt.errorbar(vary_values, M2bis[:,0], yerr=M2bis[:,1], label="x2.v1", capsize=2, linewidth=1)
+    plt.ylabel("Overlaps", fontsize=16)
+    plt.xlabel(xlabel if xlabel else vary_param, fontsize=16)
+    plt.grid(alpha=0.5)
+    plt.legend(frameon=True, fontsize=16)
+    plt.tight_layout()
+    plt.tick_params(axis='both', labelsize=14)
+    plt.show()
+    
+    return M1, M2, M2bis
