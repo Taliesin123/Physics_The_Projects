@@ -192,7 +192,7 @@ class TwoSpikedWignerMatrix(WignerMatrix):
             x_hat = x_hat / np.linalg.norm(x_hat)
         return x_hat
     
-    def power_iteration(self, x_hat, iterations=200, tol=1e-9):
+    def power_iteration(self, x_hat, iterations=200, tol=1e-5):
         for _ in range(iterations):
             x_new = self.matrix @ x_hat   # single mat-vec, O(N²)
             x_new /= np.linalg.norm(x_new)
