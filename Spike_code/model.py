@@ -114,10 +114,11 @@ def overlap(D,x1,x2) :
     v1 = eigenvect[:, idx[0]] 
     v2 = eigenvect[:, idx[1]]  
 
-    overlap1 = abs(np.dot(v1,x1))
-    overlap2 = abs(np.dot(v2,x2)) 
-    overlap2bis = abs(np.dot(v1,x2)) 
-    return overlap1, overlap2, overlap2bis
+    overlap11 = abs(np.dot(v1,x1))
+    overlap22 = abs(np.dot(v2,x2)) 
+    overlap12 = abs(np.dot(v2,x1)) 
+    overlap21 = abs(np.dot(v1,x2)) 
+    return overlap11, overlap22, overlap12, overlap21
 
 
 def overlap_2spike_varyparam(vary_param, vary_values, M, n, k1, k2, rho, alpha, xlabel=None):
