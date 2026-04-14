@@ -172,27 +172,7 @@ class TwoSpikedWignerMatrix(WignerMatrix):
         self._eigenvectors = None     # reset cache
         return None
     
-    def adam(self, x_hat, lr=1e-2, iterations=1000, beta1=0.9, beta2=0.999, eps=1e-8, tol=1e-7):
-        m = np.zeros_like(x_hat)
-        v = np.zeros_like(x_hat)
-        for i in range(1, iterations + 1):
-            Y1x, Y2x = self.Y1 @ x_hat, self.Y2 @ x_hat          # O(N²), unavoidable
-            grad = (4 / self.n) * (
-                self.alpha * (x_hat - Y1x)                         # outer(x,x)@x = x avoided
-                + np.sqrt(1 - self.alpha**2) * (x_hat - Y2x)
-            )
-            grad = grad - np.dot(grad, x_hat) * x_hat              # Riemannian projection
-            if np.linalg.norm(grad) < tol:                         # early stopping
-                break
-            m = beta1 * m + (1 - beta1) * grad
-            v = beta2 * v + (1 - beta2) * grad**2
-            m_hat = m / (1 - beta1**i)
-            v_hat = v / (1 - beta2**i)
-            x_hat = x_hat - lr * m_hat / (np.sqrt(v_hat) + eps)
-            x_hat = x_hat / np.linalg.norm(x_hat)
-        return x_hat
-    
-    def power_iteration(self, x_hat, iterations=200, tol=1e-5):
+    def power_iteration(self, x_hat, iterations=200, tol=1e-15):
         for _ in range(iterations):
             x_new = self.matrix @ x_hat   # single mat-vec, O(N²)
             x_new /= np.linalg.norm(x_new)
@@ -314,10 +294,33 @@ def phase_diagram_parallel(N, rho, alpha, lambas1, lambas2, N_gradient_descent, 
         for l1 in lambas1
         for l2 in lambas2
     ]
-    with Pool(processes=4) as pool:
+    with Pool() as pool:
         results = pool.map(_evaluate_point, args)
 
     x_vals = [r[0] for r in results]
     y_vals = [r[1] for r in results]
     colors = [r[2] for r in results]
     return x_vals, y_vals, colors
+
+
+
+def phase_diagram_continuous(N, rho, alpha, lambas1, lambas2, N_gradient_descent, N_average):
+    """Returns raw overlap grids instead of color strings."""
+    n1, n2 = len(lambas1), len(lambas2)
+    overlap1_grid = np.zeros((n1, n2))
+    overlap2_grid = np.zeros((n1, n2))
+
+    for i, lamba1 in enumerate(lambas1):
+        for j, lamba2 in enumerate(lambas2):
+            o1_acc, o2_acc = 0.0, 0.0
+            for _ in range(N_average):
+                M = TwoSpikedWignerMatrix(N, lamba1, lamba2, rho, alpha)
+                x_hat = np.random.normal(0, 1, N)
+                x_hat /= np.linalg.norm(x_hat)
+                x_hat = M.power_iteration(x_hat, N_gradient_descent)
+                o1_acc += M.overlap1(x_hat)
+                o2_acc += M.overlap2(x_hat)
+            overlap1_grid[i, j] = o1_acc / N_average
+            overlap2_grid[i, j] = o2_acc / N_average
+
+    return overlap1_grid, overlap2_grid

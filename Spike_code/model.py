@@ -62,9 +62,9 @@ def plot_eigenvalue_distribution(M, N, label = False):
     return None
 
 
-def plot_Max_Eigenval(lamba = 1):
+def plot_Max_Eigenval(lamba = 1, colors = ['red'], i = 0):
     x = BBP(lamba)
-    plt.axvline(x,label=f'Max_Eigen_Val = {x:.2f}', color='red')
+    plt.axvline(x,label=fr'Max_Eigen_Val for $\lambda_{i}$ = {x:.2f}', color = colors[i])
     return None
 
 def show():
@@ -82,12 +82,11 @@ def max_eigen_val(M):
     return np.max(eigenvalues)
 
 def first_look_at_BBP_transi(N = 500):
-    lambas = np.linspace(1, 6, 50)
+    lambas = np.linspace(0.5, 6, 50)
     x = []
     std = []
-    x_axis = np.linspace(1, 6, 1000)
+    x_axis = np.linspace(0.5, 6, 1000)
     y_BBP = BBP(x_axis)
-    plt.plot(x_axis, y_BBP, label = 'Max(2, lambda + 1/lambda)')
     plt.plot(x_axis, x_axis, label = 'y = x')
     for lamba in lambas:
         avg = []
@@ -95,14 +94,17 @@ def first_look_at_BBP_transi(N = 500):
             avg.append(max_eigen_val(spiked_gaussian_matrix(N, lamba)))
         x.append(np.mean(avg))
         std.append(np.std(avg))
-    plt.scatter(lambas, x, label = 'Max_Eigen_val', color = 'red', marker='.')
-    plt.errorbar(lambas, std, color = 'blue')
+    plt.errorbar(lambas, x, yerr=std, label = 'Max_Eigen_val', color = 'red', marker='.', capsize=2, zorder = 1)
+    plt.plot(x_axis, y_BBP, label = 'Theorical BBP transition', color = 'green', linestyle='--', zorder = 2)
+    #plt.scatter(lambas, x, label = 'Max_Eigen_val', color = 'red', marker='.')
     plt.ylabel('Eigenvalue')
-    plt.xlabel('Lambda')
+    plt.xlabel(f'$\lambda$')
+    plt.axvline(1, color = 'black', label = r'BBP transition at $\lambda = 1$')
+    plt.title(r'Maximum Eigenvalue as a function of $\lambda$')
     plt.legend()
-    plt.axvline(2, color = 'black')
+    plt.grid()
+
     plt.savefig('../Plots/Spike/BBP_transi_obs.png')
-    plt.title('Maximum Eigenvalue as a function of Lambda')
     plt.show()
 
 
