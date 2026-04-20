@@ -108,7 +108,7 @@ def first_look_at_BBP_transi(N = 500):
     plt.show()
 
 
-def overlap(D,x1,x2) :
+def overlap(D,x1,x2, all_overlap = True) :
     eigenvalues, eigenvect = np.linalg.eig(D)
 
     idx = np.argsort(eigenvalues)[::-1]
@@ -117,9 +117,13 @@ def overlap(D,x1,x2) :
     v2 = eigenvect[:, idx[1]]  
 
     overlap11 = abs(np.dot(v1,x1))
-    overlap22 = abs(np.dot(v2,x2)) 
-    overlap12 = abs(np.dot(v2,x1)) 
     overlap21 = abs(np.dot(v1,x2)) 
+    overlap22 = []
+    overlap12 = []
+    if all_overlap:
+        overlap22 = abs(np.dot(v2,x2)) 
+        overlap12 = abs(np.dot(v2,x1)) 
+    
     return overlap11, overlap22, overlap12, overlap21
 
 
