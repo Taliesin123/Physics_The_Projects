@@ -1,6 +1,8 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from multiprocessing import Pool
+
 
 class WignerMatrix:
     def __init__(self, N):
@@ -172,7 +174,7 @@ class TwoSpikedWignerMatrix(WignerMatrix):
         self._eigenvectors = None     # reset cache
         return None
     
-    def power_iteration(self, x_hat, iterations=200, tol=1e-15):
+    def power_iteration(self, x_hat, iterations=50, tol=1e-7):
         for _ in range(iterations):
             x_new = self.matrix @ x_hat   # single mat-vec, O(N²)
             x_new /= np.linalg.norm(x_new)
@@ -260,9 +262,6 @@ def phase_diagram(N, rho, alpha, lambas1, lambas2, N_gradient_descent, threshold
             else:
                 colors.append("pink")
     return x_vals, y_vals, colors
-
-
-from multiprocessing import Pool
 
 def _evaluate_point(args):
     N, lamba1, lamba2, rho, alpha, N_gradient_descent, threshold, N_average = args

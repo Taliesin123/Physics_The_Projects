@@ -7,15 +7,15 @@ import os
 
 importlib.reload(m)
 
-N = 1000
-lambas1 = np.linspace(0.1, 5, 100)
+N = 100        
+lambas1 = np.linspace(0.1, 5, 100)  
 lambas2 = np.linspace(0.1, 5, 100)
-
-alphas = np.linspace(0, 0.8, 3)
-rhos = np.linspace(0, 1, 5)
-
 N_gradient_descent = 100
-N_average = 5
+N_average = 20           
+
+alphas = [0.5]
+rhos = [0.0, 0.1, 0.2, 0.6, 1.0]
+
 
 cmap = mcolors.LinearSegmentedColormap.from_list(
     "overlap_green",
@@ -43,7 +43,7 @@ for rho in rhos:
             cmap=cmap,
             vmin=0,
             vmax=0.5,
-            interpolation="bilinear",
+            interpolation="bicubic",   # sharper-looking edges
         )
 
         fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label="Average overlap")
@@ -51,6 +51,6 @@ for rho in rhos:
         ax.set_title(rf"Phase diagram  —  $\rho={rho:.2f}$,  $\alpha={alpha:.2f}$")
 
         fig.tight_layout()
-        fig.savefig(f"./Plots/phase_transi/Phase_Diagram_rho={rho:.2f}_alpha={alpha:.2f}.png", dpi=200, bbox_inches="tight")
+        fig.savefig(f"./Plots/phase_transi/Phase_Diagram_alpha={alpha:.2f}_rho={rho:.2f}.png", dpi=200, bbox_inches="tight")
         plt.close(fig)
         print(f"  Done.")
