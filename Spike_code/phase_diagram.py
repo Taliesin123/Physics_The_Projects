@@ -8,13 +8,13 @@ import os
 importlib.reload(m)
 
 N = 300
-lambas1 = np.linspace(0.1, 5, 50)
-lambas2 = np.linspace(0.1, 5, 50)
+lambas1 = np.linspace(0.1, 5, 100)
+lambas2 = np.linspace(0.1, 5, 100)
 N_gradient_descent = 100
 N_average = 20
 
 alphas = [np.sqrt(0.5)]
-rhos = [0.0, 0.1, 0.2, 0.6, 1.0]
+rhos = [0.0, 0.1, 0.2, 0.3, 0.5, 1.0]
 
 # Maximum meaningful per-spike overlap (used to normalize the two
 # channels to [0, 1] before packing them into an RGB image).
