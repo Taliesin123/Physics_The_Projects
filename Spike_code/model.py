@@ -13,12 +13,12 @@ def symmetric_gaussian_matrix(n):
 def random_spike(n, k):
     v = np.random.normal(0, 1, n)
     v = v /np.linalg.norm(v)  # normalize to unit vector
-    return k * np.outer(v, v)
+    return k * np.outer(v, v), v
 
 def spiked_gaussian_matrix(n, k):
     G = symmetric_gaussian_matrix(n)
-    S = random_spike(n, k)
-    return G + S
+    S, x = random_spike(n, k)
+    return G + S, x, G
 
 def two_correlated_spikes(n, k1, k2, rho):    
     cov = [[1, rho],
