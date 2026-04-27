@@ -362,9 +362,9 @@ if __name__ == "__main__":
 
     # 1) single-run demo
     demo(
-        N=400, lambda1=2.5, lambda2=2.5,
-        rho=0.1, alpha=np.sqrt(0.5),
-        mu=2.0, seed=0,
+        N=400, lambda1=2.5, lambda2=0.8,
+        rho=0.3, alpha=np.sqrt(0.5),
+        mu=1.0, seed=0,
         save_path=os.path.join(plot_dir, "fisher_demo.png"),
     )
 
