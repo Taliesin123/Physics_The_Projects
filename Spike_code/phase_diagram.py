@@ -7,9 +7,9 @@ import os
 
 importlib.reload(m)
 
-N = 100
-lambas1 = np.linspace(0.1, 1, 10)
-lambas2 = np.linspace(0.1, 1, 10)
+N = 300
+lambas1 = np.linspace(0.1, 5, 50)
+lambas2 = np.linspace(0.1, 5, 50)
 N_gradient_descent = 100
 N_average = 20
 
