@@ -46,7 +46,7 @@ LAMBDA1_FIX     = 5.0          # signal strength of spike 1
 LAMBDA2_FIX     = 7.0          # signal strength of spike 2
 N_REALISATIONS  = 50           # for the (rho -> top-2 eigenvalues) curve
 N_RHO_EV        = 100          # number of rho samples in that curve
-N_BULK          = 1500         # matrix size for the static bulk histogram
+N_BULK          = 5000         # matrix size for the static bulk histogram
 BBP_THRESHOLD   = 2.0          # right edge of the Wigner semicircle
 SEMICIRCLE_R    = 2.0          # semicircle radius (= BBP threshold)
 
@@ -302,7 +302,7 @@ x_max = max(SEMICIRCLE_R, spike_max) + 1.0
 # Static bulk histogram (density).
 ax_ev.hist(
     bulk_eigs, bins=80, range=(-SEMICIRCLE_R - 0.2, SEMICIRCLE_R + 0.2),
-    density=True, color="lightsteelblue", edgecolor="steelblue",
+    density=True,
     alpha=0.75, label="Empirical bulk",
 )
 
