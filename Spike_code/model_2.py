@@ -139,6 +139,10 @@ class TwoSpikedWignerMatrix(WignerMatrix):
     def max_eigenvalue(self):       #overwrite to block
         raise NotImplementedError("max_eigenvalue is not defined for two correlated spikes")
     
+    def double_max_eigenvalue(self):
+        self.compute_eigen()
+        return self.eigenvalues[-1], self.eigenvalues[-2]
+    
     def loss(self, x_hat):
         return (self.alpha * np.linalg.norm(self.Y1 - np.outer(x_hat,x_hat))**2 + np.sqrt(1-self.alpha**2) * np.linalg.norm(self.Y2 - np.outer(x_hat,x_hat))**2)/self.n
 
