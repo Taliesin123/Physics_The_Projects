@@ -7,14 +7,14 @@ import os
 
 importlib.reload(m)
 
-N = 300
+N = 100
 lambas1 = np.linspace(0.1, 5, 100)
 lambas2 = np.linspace(0.1, 5, 100)
 N_gradient_descent = 100
 N_average = 20
 
 alphas = [np.sqrt(0.5)]
-rhos = [0.0, 0.1, 0.2, 0.3, 0.5, 1.0]
+rhos = [0.0]
 
 # Maximum meaningful per-spike overlap (used to normalize the two
 # channels to [0, 1] before packing them into an RGB image).
@@ -52,6 +52,13 @@ for rho in rhos:
             aspect="auto",
             interpolation="bicubic",
         )
+        lam1_bbp = 1.0 / alpha
+        lam2_bbp = 1.0 / np.sqrt(1.0 - alpha**2)
+
+        ax.axvline(lam1_bbp, color="white", ls="--", lw=1.2, alpha=0.8,
+                label=rf"$\lambda_1 = 1/\alpha \approx {lam1_bbp:.2f}$")
+        ax.axhline(lam2_bbp, color="white", ls=":",  lw=1.2, alpha=0.8,
+                label=rf"$\lambda_2 = 1/\sqrt{{1-\alpha^2}} \approx {lam2_bbp:.2f}$")
 
         ax.set(xlabel=r"$\lambda_1$", ylabel=r"$\lambda_2$")
         ax.set_title(rf"Phase diagram  —  $\rho={rho:.2f}$,  $\alpha={alpha:.2f}$")
