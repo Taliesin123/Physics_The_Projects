@@ -1,3 +1,4 @@
+from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -7,7 +8,7 @@ import os
 
 importlib.reload(m)
 
-N = 100
+N = 50
 lambas1 = np.linspace(0.1, 5, 100)
 lambas2 = np.linspace(0.1, 5, 100)
 N_gradient_descent = 100
@@ -55,9 +56,9 @@ for rho in rhos:
         lam1_bbp = 1.0 / alpha
         lam2_bbp = 1.0 / np.sqrt(1.0 - alpha**2)
 
-        ax.axvline(lam1_bbp, color="white", ls="--", lw=1.2, alpha=0.8,
+        ax.axvline(lam1_bbp, color="white", ls="--", lw=2, alpha=0.8,
                 label=rf"$\lambda_1 = 1/\alpha \approx {lam1_bbp:.2f}$")
-        ax.axhline(lam2_bbp, color="white", ls=":",  lw=1.2, alpha=0.8,
+        ax.axhline(lam2_bbp, color="blue", ls="--",  lw=2, alpha=0.8,
                 label=rf"$\lambda_2 = 1/\sqrt{{1-\alpha^2}} \approx {lam2_bbp:.2f}$")
 
         ax.set(xlabel=r"$\lambda_1$", ylabel=r"$\lambda_2$")
@@ -72,6 +73,10 @@ for rho in rhos:
                            label=r"Only $m_2$ recovered"),
             mpatches.Patch(facecolor=(1, 1, 0), edgecolor="white",
                            label="Both recovered"),
+            Line2D([0], [0], color="white", ls="--", lw=1.2,
+                label=rf"BBP $\lambda_1 = 1/\alpha \approx {lam1_bbp:.2f}$"),
+            Line2D([0], [0], color="blue", ls="--",  lw=1.2,
+           label=rf"BBP $\lambda_2 = 1/\sqrt{{1-\alpha^2}} \approx {lam2_bbp:.2f}$"),
         ]
         ax.legend(
             handles=legend_patches,
