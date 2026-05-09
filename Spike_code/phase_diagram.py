@@ -8,14 +8,14 @@ import os
 
 importlib.reload(m)
 
-N = 50
+N = 300
 lambas1 = np.linspace(0.1, 5, 100)
 lambas2 = np.linspace(0.1, 5, 100)
 N_gradient_descent = 100
 N_average = 20
 
 alphas = [np.sqrt(0.5)]
-rhos = [0.0]
+rhos = [0.0, 0.1, 0.2, 0.3, 0.5, 1.0]
 
 # Maximum meaningful per-spike overlap (used to normalize the two
 # channels to [0, 1] before packing them into an RGB image).
@@ -56,13 +56,14 @@ for rho in rhos:
         lam1_bbp = 1.0 / alpha
         lam2_bbp = 1.0 / np.sqrt(1.0 - alpha**2)
 
-        ax.axvline(lam1_bbp, color="white", ls="--", lw=2, alpha=0.8,
-                label=rf"$\lambda_1 = 1/\alpha \approx {lam1_bbp:.2f}$")
+        ax.axvline(lam1_bbp, color="black", ls="--", lw=2, alpha=0.8,
+                label=rf"BBP threshold for $\lambda_1$")
         ax.axhline(lam2_bbp, color="blue", ls="--",  lw=2, alpha=0.8,
-                label=rf"$\lambda_2 = 1/\sqrt{{1-\alpha^2}} \approx {lam2_bbp:.2f}$")
+                label=rf"BBP threshold for $\lambda_2$")
 
-        ax.set(xlabel=r"$\lambda_1$", ylabel=r"$\lambda_2$")
-        ax.set_title(rf"Phase diagram  —  $\rho={rho:.2f}$,  $\alpha={alpha:.2f}$")
+        ax.set_xlabel(r"$\lambda_1$", fontsize=24)
+        ax.set_ylabel(r"$\lambda_2$", fontsize=24)
+        ax.tick_params(axis='both', which='major', labelsize=20)
 
         legend_patches = [
             mpatches.Patch(facecolor=(0, 0, 0), edgecolor="white",
@@ -73,16 +74,16 @@ for rho in rhos:
                            label=r"Only $m_2$ recovered"),
             mpatches.Patch(facecolor=(1, 1, 0), edgecolor="white",
                            label="Both recovered"),
-            Line2D([0], [0], color="white", ls="--", lw=1.2,
-                label=rf"BBP $\lambda_1 = 1/\alpha \approx {lam1_bbp:.2f}$"),
+            Line2D([0], [0], color="black", ls="--", lw=1.2,
+                label=rf"BBP threshold for $\lambda_1$"),
             Line2D([0], [0], color="blue", ls="--",  lw=1.2,
-           label=rf"BBP $\lambda_2 = 1/\sqrt{{1-\alpha^2}} \approx {lam2_bbp:.2f}$"),
+           label=rf"BBP threshold for $\lambda_2$"),
         ]
         ax.legend(
             handles=legend_patches,
             loc="upper left",
             framealpha=0.85,
-            fontsize=8,
+            fontsize=20,
         )
 
         fig.tight_layout()
