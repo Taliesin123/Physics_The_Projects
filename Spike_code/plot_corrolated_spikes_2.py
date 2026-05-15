@@ -17,6 +17,7 @@ alphas = np.linspace(0, 1, 100)
 for alpha in alphas:
     a = []
     b = []
+    print("alpha:", alpha)
     for i in range(50):
         M = m.TwoSpikedWignerMatrix(N, lamba_1, lamba_2, rho, alpha)
         x1, x2 = M.double_max_eigenvalue()
@@ -35,8 +36,7 @@ plt.xlim(0, 1)
 plt.axhline(2, color='red', linestyle='--', label=r'BBP threshold')
 plt.ylabel('Top two eigenvalues')
 #plt.title(rf'Top two eigenvalues of Two Spiked Wigner Matrix with $\rho$ = 0.2')
-plt.legend(loc="upper left",
-                framealpha=0.8,
+plt.legend(framealpha=0.8,
                 borderaxespad=0,)
 plt.grid()
 plt.savefig(f'./Plots/Spike/Two_Spiked_Wigner_Top_Eigenvalues_rho_0.2.png', dpi=150)

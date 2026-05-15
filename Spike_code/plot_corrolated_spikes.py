@@ -34,8 +34,7 @@ plt.xlim(0, 1)
 plt.axhline(2, color='red', linestyle='--', label=r'BBP threshold')
 plt.ylabel('Top two eigenvalues')
 #plt.title(rf'Top two eigenvalues of Two Spiked Wigner Matrix with $\alpha$ = {np.sqrt(0.5):.2f}')
-plt.legend(loc="upper left",
-                framealpha=0.8,
+plt.legend(framealpha=0.8, location="upper left",
                 borderaxespad=0,)
 plt.grid()
 plt.tight_layout()
