@@ -1,21 +1,14 @@
 """
-EWC paper-style plot
-====================
+EWC paper-style plot (Fixed L2 Anchoring)
+=========================================
 Reproduces the layout of Fig. 2A from Kirkpatrick et al. (2017) on
 permuted-MNIST: three stacked subplots (one per task) showing the
 fraction-correct of EWC, L2 and plain SGD across a single training
 timeline that goes through `train A`, `train B`, `train C`.
 
-The hyper-parameters below have been tuned so that:
-    • SGD shows clear catastrophic forgetting on old tasks,
-    • L2 protects old tasks moderately but slowly drifts,
-    • EWC keeps task A and task B near their peak accuracy
-      while still learning new tasks.
-
-Run:
-    python ewc_paper_plot.py
-Outputs:
-    ewc_paper_plot.png  (saved next to this script)
+Modifications:
+- L2 baseline is now properly anchored ONLY to the immediately preceding 
+  task, making it a fair structural comparison against EWC.
 """
 
 import os
@@ -32,31 +25,14 @@ from torch.utils.data import DataLoader, Subset
 # CONFIG
 # ──────────────────────────────────────────────────────────────
 SEED            = 42
-BATCH           = 256
-HIDDEN          = 600      # widened from 400. Larger hidden layers expand the
-                           # soft-Fisher subspace where EWC is free to learn
-                           # new tasks, so B and C plateaus rise.
-EPOCHS_PER_TASK = 15       # raised from 12. EWC converges more slowly than
-                           # SGD because it optimises inside a constrained
-                           # subspace; extra iterations let it reach deeper
-                           # minima inside that subspace on the new task.
+BATCH           = 64
+HIDDEN          = 100      # Network capacity
+EPOCHS_PER_TASK = 30      
 LR              = 1e-3
-LAMBDA_EWC      = 1000.0   # EWC penalty (Fisher-weighted). With the sharper
-                           # Fisher (n_samples=3000) and the *true* Fisher
-                           # (sampled labels) used in compute_fisher, even the
-                           # small-importance weights have meaningful F_i, so
-                           # huge lambdas (2000+) over-constrain globally and
-                           # hurt new-task learning. ~1000 is the sweet spot.
-LAMBDA_L2       = 3.0      # L2 penalty per past snapshot. Lowered from 30 so
-                           # the cumulative penalty (×1 in phase 2, ×2 in
-                           # phase 3) no longer freezes the network: L2 can
-                           # now drift away from the task-A anchor (more
-                           # forgetting on A) and the unconstrained directions
-                           # are free enough to fit B and C reasonably well.
-                           # Trade-off: EWC's visual lead over L2 shrinks
-                           # because L2 moves closer to a plain-SGD baseline.
-N_TRAIN_SUBSET  = 15_000   # subset of MNIST train (keeps run < ~3 min on CPU)
-EVALS_PER_EPOCH = 4        # how often to evaluate during each epoch
+LAMBDA_EWC      = 1000.0   # EWC penalty 
+LAMBDA_L2       = 0.05      # L2 penalty (now applied ONLY to the last snapshot)
+N_TRAIN_SUBSET  = 15_000   
+EVALS_PER_EPOCH = 1     
 DEVICE          = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 torch.manual_seed(SEED)
@@ -79,12 +55,11 @@ test_full  = datasets.MNIST(DATA_ROOT, train=False, download=True, transform=tf)
 g = torch.Generator().manual_seed(SEED)
 train_subset_idx = torch.randperm(len(train_full), generator=g)[:N_TRAIN_SUBSET].tolist()
 train_ds         = Subset(train_full, train_subset_idx)
-test_ds          = test_full
 
-# Three pixel permutations — one per task, all drawn at random as in
-# Kirkpatrick et al. (2017). Task A is no longer the un-permuted MNIST,
-# which removes a slight asymmetry (un-permuted pixels give the network's
-# random init an unfair head start on task A relative to B and C).
+N_TEST_SUBSET    = 2000  # Only test on 2,000 images per task instead of 10,000
+test_subset_idx  = torch.randperm(len(test_full), generator=g)[:N_TEST_SUBSET].tolist()
+test_ds          = Subset(test_full, test_subset_idx)
+
 perms = [
     torch.randperm(784, generator=g),
     torch.randperm(784, generator=g),
@@ -92,7 +67,6 @@ perms = [
 ]
 
 def make_loader(ds, perm, shuffle):
-    """Return a DataLoader that flattens images and applies `perm` to pixels."""
     def collate(batch):
         x = torch.stack([img.view(-1)[perm] for img, _ in batch])
         y = torch.tensor([lbl for _, lbl in batch])
@@ -103,7 +77,7 @@ train_loaders = [make_loader(train_ds, p, True)  for p in perms]
 test_loaders  = [make_loader(test_ds,  p, False) for p in perms]
 
 # ──────────────────────────────────────────────────────────────
-# MODEL — 2-hidden-layer MLP, shared across all 3 tasks
+# MODEL 
 # ──────────────────────────────────────────────────────────────
 def make_model():
     torch.manual_seed(SEED)
@@ -129,61 +103,42 @@ def accuracy(model, loader):
 def snapshot(model):
     return {n: p.clone().detach() for n, p in model.named_parameters()}
 
-def compute_fisher(model, loader, n_samples=5000):
-    """
-    Diagonal of the *true* Fisher information matrix (Kirkpatrick et al.):
-        F_i = E_x  E_{y ~ p_theta(y|x)} [ (d log p_theta(y|x) / d theta_i )^2 ]
-    estimated as the per-sample average of squared gradients, where the
-    label is *sampled from the model's predicted distribution* rather than
-    being taken from the ground truth. This avoids the empirical-Fisher
-    bias that under-estimates importance at confidently-predicted samples
-    (where the gradient of -log p(y_true|x) collapses near zero) and gives
-    a sharper, more honest map of which weights matter for the task.
-    """
+def compute_fisher(model, loader, n_samples=1000):
     fish = {n: torch.zeros_like(p) for n, p in model.named_parameters()}
     seen = 0
     model.eval()
     for xb, _ in loader:
         xb = xb.to(DEVICE)
-        for xi in xb:                                   # one sample at a time
+        for xi in xb:
             if seen >= n_samples:
                 break
             model.zero_grad()
             log_probs = F.log_softmax(model(xi.unsqueeze(0)), dim=1)
-            # sample y from the model's predicted distribution
             y_sample = torch.multinomial(log_probs.exp().detach(),
                                          num_samples=1).squeeze(1)
             F.nll_loss(log_probs, y_sample).backward()
             for n, p in model.named_parameters():
                 if p.grad is not None:
-                    fish[n] += p.grad.detach() ** 2     # per-sample squared grad
+                    fish[n] += p.grad.detach() ** 2
             seen += 1
         if seen >= n_samples:
             break
     return {n: v / seen for n, v in fish.items()}
 
 # ──────────────────────────────────────────────────────────────
-# TRAINING — one full sequential run for a given method
+# TRAINING 
 # ──────────────────────────────────────────────────────────────
 def run(method):
     model = make_model()
 
-    snaps        = []     # L2  : list of past snapshots (one per finished task)
     fisher_accum = None   # EWC : running sum of Fisher diagonals
-    anchor       = None   # EWC : params at end of last finished task
+    anchor       = None   # EWC & L2 : params at end of last finished task
 
-    # accuracies[task_id] = list of test-accs, one entry per evaluation step
     accuracies = [[] for _ in range(3)]
 
     for phase, train_loader in enumerate(train_loaders):
-        # Re-create the optimiser at every phase boundary so Adam's running
-        # 1st/2nd-moment estimates start fresh. Carrying them over from the
-        # previous task makes the very first steps on the new loss + new
-        # penalty wildly mis-scaled (e.g. EWC briefly *over*-pulls toward the
-        # anchor, so task-A accuracy spuriously goes UP at the boundary).
         opt = optim.Adam(model.parameters(), lr=LR)
 
-        # how often to evaluate inside an epoch
         n_batches   = len(train_loader)
         eval_every  = max(1, n_batches // EVALS_PER_EPOCH)
 
@@ -194,15 +149,14 @@ def run(method):
                 opt.zero_grad()
                 loss = F.cross_entropy(model(xb), yb)
 
-                # ── L2 : uniform pull-back to every past snapshot ──
-                if method == 'l2' and snaps:
+                # ── L2 : uniform pull-back to the LAST snapshot only ──
+                if method == 'l2' and anchor is not None:
                     pen = 0.0
-                    for snap in snaps:
-                        for n, p in model.named_parameters():
-                            pen = pen + (p - snap[n]).pow(2).sum()
+                    for n, p in model.named_parameters():
+                        pen = pen + (p - anchor[n]).pow(2).sum()
                     loss = loss + (LAMBDA_L2 / 2) * pen
 
-                # ── EWC : Fisher-weighted pull-back to last snapshot ──
+                # ── EWC : Fisher-weighted pull-back to the LAST snapshot ──
                 if method == 'ewc' and anchor is not None:
                     pen = 0.0
                     for n, p in model.named_parameters():
@@ -213,16 +167,13 @@ def run(method):
                 loss.backward()
                 opt.step()
 
-                # evaluate at regular intra-epoch intervals
                 if (batch_i + 1) % eval_every == 0 or batch_i == n_batches - 1:
                     for tid in range(3):
                         accuracies[tid].append(accuracy(model, test_loaders[tid]))
                     model.train()
 
         # ── End of phase : update regularisation state ──
-        snap = snapshot(model)
-        snaps.append(snap)            # L2 keeps every past snapshot
-        anchor = snap                 # EWC always anchors to latest
+        anchor = snapshot(model)      # Both L2 and EWC now anchor to the latest snapshot
 
         if method == 'ewc':
             new_f = compute_fisher(model, train_loader)
@@ -245,11 +196,11 @@ for method in ['sgd', 'l2', 'ewc']:
 print("\nAll runs complete.\n")
 
 # ──────────────────────────────────────────────────────────────
-# PLOT  —  paper-style 3 stacked rows, single training timeline
+# PLOT 
 # ──────────────────────────────────────────────────────────────
-n_steps_total       = len(results['sgd'][0])             # total #evaluations
-steps_per_phase     = n_steps_total // 3                 # evals per task
-phase_boundaries_x  = [steps_per_phase, 2 * steps_per_phase]  # vertical dashed lines
+n_steps_total       = len(results['sgd'][0])
+steps_per_phase     = n_steps_total // 3
+phase_boundaries_x  = [steps_per_phase, 2 * steps_per_phase]
 
 x = np.arange(1, n_steps_total + 1)
 
@@ -259,7 +210,6 @@ method_label = {'sgd': 'SGD',     'l2': r'L$_2$', 'ewc': 'EWC'}
 fig, axes = plt.subplots(3, 1, figsize=(8.5, 6.2), sharex=True)
 
 for tid, ax in enumerate(axes):
-    # task `tid` has not been seen until phase `tid` begins
     start = tid * steps_per_phase
 
     for method in ['sgd', 'l2', 'ewc']:
@@ -271,39 +221,29 @@ for tid, ax in enumerate(axes):
             label=method_label[method] if tid == 0 else None,
         )
 
-    # phase boundaries
     for b in phase_boundaries_x:
         ax.axvline(b + 0.5, color='gray', linestyle='--',
                    linewidth=1, alpha=0.7)
 
-    # cosmetics
-    # NB: y-axis extends down to 0 so that L2's collapse on the newly
-    # introduced task is visible — with the cumulative L2 penalty it
-    # often falls well below the 0.8 cutoff used in the original paper.
-    ax.set_ylim(0.0, 1.02)
-    ax.set_yticks([0.0, 0.5, 1.0])
-    ax.set_yticklabels(['0', '0.5', '1.0'])
-    ax.axhline(0.1, color='gray', linewidth=0.7, linestyle=':',
-               alpha=0.5)   # chance level (10 classes)
-    ax.set_ylabel(f"Task {chr(ord('A') + tid)}", fontsize=12, rotation=90,
-                  labelpad=12)
+    ax.set_ylim(0.5, 1.02)
+    ax.set_yticks([0.5, 0.75, 1.0])
+    ax.set_yticklabels(['0.5', '0.75', '1.0'])
+    ax.axhline(0.1, color='gray', linewidth=0.7, linestyle=':', alpha=0.5)
+    ax.set_ylabel(f"Task {chr(ord('A') + tid)}", fontsize=12, rotation=90, labelpad=12)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.tick_params(axis='x', which='both', length=0)
     ax.set_xticks([])
     ax.set_xlim(0.5, n_steps_total + 0.5)
 
-# ── phase labels above the top panel ──
 top_ax = axes[0]
 phase_centres = [steps_per_phase * (i + 0.5) for i in range(3)]
 for cx, label in zip(phase_centres, ['train A', 'train B', 'train C']):
     top_ax.text(cx, 1.05, label, ha='center', va='bottom',
                 fontsize=12, transform=top_ax.get_xaxis_transform())
 
-# ── method labels on the right of the top panel (paper style) ──
 last_x = n_steps_total + 0.5
 last_y = {m: results[m][0][-1] for m in ['sgd', 'l2', 'ewc']}
-# nudge labels apart so they don't overlap
 ys_sorted = sorted(last_y.items(), key=lambda kv: kv[1])
 min_gap = 0.025
 adjusted = []
@@ -317,9 +257,7 @@ for m, y in adjusted:
                 color=method_color[m], fontsize=12, fontweight='bold',
                 va='center', ha='left')
 
-# ── shared axis labels ──
 axes[-1].set_xlabel("Training time", fontsize=12)
-#fig.text(0.04, 0.07, "Frac. correct", ha='left', va='bottom', fontsize=11)
 
 plt.subplots_adjust(left=0.13, right=0.94, top=0.92, bottom=0.10, hspace=0.35)
 
