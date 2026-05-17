@@ -1,17 +1,18 @@
 """
-EWC paper-style plot (Fixed L2 Anchoring)
-=========================================
+EWC paper-style plot (Fixed L2 Anchoring) with Cross-Validation
+===============================================================
 Reproduces the layout of Fig. 2A from Kirkpatrick et al. (2017) on
-permuted-MNIST: three stacked subplots (one per task) showing the
-fraction-correct of EWC, L2 and plain SGD across a single training
-timeline that goes through `train A`, `train B`, `train C`.
+permuted-MNIST. Incorporates sequential cross-validation to dynamically 
+select the optimal LAMBDA parameters for the current task being learned.
 
 Modifications:
-- L2 baseline is now properly anchored ONLY to the immediately preceding 
-  task, making it a fair structural comparison against EWC.
+- Uses a widened logarithmic grid for hyperparameter search.
+- Corrects EWC to maintain separate Fisher matrices and anchors 
+  for EVERY previous task to prevent catastrophic forgetting.
 """
 
 import os
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -25,15 +26,18 @@ from torch.utils.data import DataLoader, Subset
 # CONFIG
 # ──────────────────────────────────────────────────────────────
 SEED            = 42
-BATCH           = 16
-HIDDEN          = 100      # Network capacity
+BATCH           = 64
+HIDDEN          = 100      
 EPOCHS_PER_TASK = 30      
 LR              = 1e-3
-LAMBDA_EWC      = 8000.0   # EWC penalty 
-LAMBDA_L2       = 0.005      # L2 penalty (now applied ONLY to the last snapshot)
-N_TRAIN_SUBSET  = 15_000   
+N_TRAIN_SUBSET  = 12_000   
+N_VAL_SUBSET    = 3_000    
 EVALS_PER_EPOCH = 1     
 DEVICE          = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Cross-Validation Search Grids (Widened)
+LAMBDA_EWC_GRID = [11000.0, 12000.0, 10000.0, 13000.0, 15000.0] 
+LAMBDA_L2_GRID  = [0.001, 0.005, 0.01, 0.05, 0.1]
 
 torch.manual_seed(SEED)
 np.random.seed(SEED)
@@ -41,7 +45,7 @@ np.random.seed(SEED)
 # ──────────────────────────────────────────────────────────────
 # DATA  —  3 permuted-MNIST tasks
 # ──────────────────────────────────────────────────────────────
-print("Loading MNIST ...")
+print(f"Loading MNIST on {DEVICE}...")
 HERE      = os.path.dirname(os.path.abspath(__file__))
 DATA_ROOT = os.path.join(HERE, 'data')
 tf = transforms.Compose([
@@ -51,14 +55,18 @@ tf = transforms.Compose([
 train_full = datasets.MNIST(DATA_ROOT, train=True,  download=True, transform=tf)
 test_full  = datasets.MNIST(DATA_ROOT, train=False, download=True, transform=tf)
 
-# subset for speed
+# Subsets for train, validation, and speed
 g = torch.Generator().manual_seed(SEED)
-train_subset_idx = torch.randperm(len(train_full), generator=g)[:N_TRAIN_SUBSET].tolist()
-train_ds         = Subset(train_full, train_subset_idx)
+all_train_idx    = torch.randperm(len(train_full), generator=g).tolist()
+train_subset_idx = all_train_idx[:N_TRAIN_SUBSET]
+val_subset_idx   = all_train_idx[N_TRAIN_SUBSET:N_TRAIN_SUBSET + N_VAL_SUBSET]
 
-N_TEST_SUBSET    = 2000  # Only test on 2,000 images per task instead of 10,000
-test_subset_idx  = torch.randperm(len(test_full), generator=g)[:N_TEST_SUBSET].tolist()
-test_ds          = Subset(test_full, test_subset_idx)
+train_ds = Subset(train_full, train_subset_idx)
+val_ds   = Subset(train_full, val_subset_idx)
+
+N_TEST_SUBSET   = 2000  
+test_subset_idx = torch.randperm(len(test_full), generator=g)[:N_TEST_SUBSET].tolist()
+test_ds         = Subset(test_full, test_subset_idx)
 
 perms = [
     torch.randperm(784, generator=g),
@@ -74,6 +82,7 @@ def make_loader(ds, perm, shuffle):
     return DataLoader(ds, BATCH, shuffle=shuffle, collate_fn=collate)
 
 train_loaders = [make_loader(train_ds, p, True)  for p in perms]
+val_loaders   = [make_loader(val_ds, p, False)   for p in perms]
 test_loaders  = [make_loader(test_ds,  p, False) for p in perms]
 
 # ──────────────────────────────────────────────────────────────
@@ -114,8 +123,7 @@ def compute_fisher(model, loader, n_samples=1000):
                 break
             model.zero_grad()
             log_probs = F.log_softmax(model(xi.unsqueeze(0)), dim=1)
-            y_sample = torch.multinomial(log_probs.exp().detach(),
-                                         num_samples=1).squeeze(1)
+            y_sample = torch.multinomial(log_probs.exp().detach(), num_samples=1).squeeze(1)
             F.nll_loss(log_probs, y_sample).backward()
             for n, p in model.named_parameters():
                 if p.grad is not None:
@@ -126,63 +134,101 @@ def compute_fisher(model, loader, n_samples=1000):
     return {n: v / seen for n, v in fish.items()}
 
 # ──────────────────────────────────────────────────────────────
-# TRAINING 
+# TRAINING & CROSS-VALIDATION
 # ──────────────────────────────────────────────────────────────
+def train_candidate(start_model, train_loader, method, lam, anchor, ewc_memories):
+    """Trains a candidate model with a specific lambda and records test trajectories."""
+    model = copy.deepcopy(start_model)
+    opt = optim.Adam(model.parameters(), lr=LR)
+    
+    n_batches   = len(train_loader)
+    eval_every  = max(1, n_batches // EVALS_PER_EPOCH)
+    phase_accs  = [[] for _ in range(3)]
+
+    for epoch in range(EPOCHS_PER_TASK):
+        model.train()
+        for batch_i, (xb, yb) in enumerate(train_loader):
+            xb, yb = xb.to(DEVICE), yb.to(DEVICE)
+            opt.zero_grad()
+            loss = F.cross_entropy(model(xb), yb)
+
+            # ── L2 : Uniform pull-back to the LAST snapshot only ──
+            if method == 'l2' and anchor is not None:
+                pen = sum((p - anchor[n]).pow(2).sum() for n, p in model.named_parameters())
+                loss += (lam / 2) * pen
+
+            # ── EWC : Fisher-weighted pull-back to ALL previous snapshots ──
+            if method == 'ewc' and len(ewc_memories) > 0:
+                pen = 0.0
+                for old_anchor, old_fisher in ewc_memories:
+                    for n, p in model.named_parameters():
+                        pen += (old_fisher[n] * (p - old_anchor[n]).pow(2)).sum()
+                loss += (lam / 2) * pen
+
+            loss.backward()
+            opt.step()
+
+            if (batch_i + 1) % eval_every == 0 or batch_i == n_batches - 1:
+                for tid in range(3):
+                    phase_accs[tid].append(accuracy(model, test_loaders[tid]))
+                model.train()
+
+    return model, phase_accs
+
 def run(method):
     model = make_model()
-
-    fisher_accum = None   # EWC : running sum of Fisher diagonals
-    anchor       = None   # EWC & L2 : params at end of last finished task
-
-    accuracies = [[] for _ in range(3)]
+    anchor       = None   
+    ewc_memories = []     # List of tuples: (snapshot_dict, fisher_dict)
+    accuracies   = [[] for _ in range(3)]
 
     for phase, train_loader in enumerate(train_loaders):
-        opt = optim.Adam(model.parameters(), lr=LR)
+        grid = [0.0]  # Default for Task A or SGD
+        
+        if phase > 0:
+            if method == 'ewc':
+                grid = LAMBDA_EWC_GRID
+            elif method == 'l2':
+                grid = LAMBDA_L2_GRID
 
-        n_batches   = len(train_loader)
-        eval_every  = max(1, n_batches // EVALS_PER_EPOCH)
+        best_val_acc = -1.0
+        best_candidate_state = None
+        best_phase_accs = None
+        best_lam = None
 
-        for epoch in range(EPOCHS_PER_TASK):
-            model.train()
-            for batch_i, (xb, yb) in enumerate(train_loader):
-                xb, yb = xb.to(DEVICE), yb.to(DEVICE)
-                opt.zero_grad()
-                loss = F.cross_entropy(model(xb), yb)
+        # Cross Validation: Search over grid
+        for lam in grid:
+            candidate_model, phase_accs = train_candidate(
+                model, train_loader, method, lam, anchor, ewc_memories
+            )
+            
+            # Evaluate this candidate on all seen validation datasets
+            val_accs = [accuracy(candidate_model, val_loaders[t]) for t in range(phase + 1)]
+            avg_val_acc = sum(val_accs) / len(val_accs)
+            
+            if avg_val_acc > best_val_acc:
+                best_val_acc = avg_val_acc
+                best_candidate_state = candidate_model.state_dict()
+                best_phase_accs = phase_accs
+                best_lam = lam
 
-                # ── L2 : uniform pull-back to the LAST snapshot only ──
-                if method == 'l2' and anchor is not None:
-                    pen = 0.0
-                    for n, p in model.named_parameters():
-                        pen = pen + (p - anchor[n]).pow(2).sum()
-                    loss = loss + (LAMBDA_L2 / 2) * pen
-
-                # ── EWC : Fisher-weighted pull-back to the LAST snapshot ──
-                if method == 'ewc' and anchor is not None:
-                    pen = 0.0
-                    for n, p in model.named_parameters():
-                        pen = pen + (fisher_accum[n] *
-                                     (p - anchor[n]).pow(2)).sum()
-                    loss = loss + (LAMBDA_EWC / 2) * pen
-
-                loss.backward()
-                opt.step()
-
-                if (batch_i + 1) % eval_every == 0 or batch_i == n_batches - 1:
-                    for tid in range(3):
-                        accuracies[tid].append(accuracy(model, test_loaders[tid]))
-                    model.train()
+        # Lock in the best candidate
+        model.load_state_dict(best_candidate_state)
+        for tid in range(3):
+            accuracies[tid].extend(best_phase_accs[tid])
 
         # ── End of phase : update regularisation state ──
-        anchor = snapshot(model)      # Both L2 and EWC now anchor to the latest snapshot
-
+        current_snapshot = snapshot(model)      
+        
+        if method == 'l2':
+            anchor = current_snapshot
+            
         if method == 'ewc':
             new_f = compute_fisher(model, train_loader)
-            fisher_accum = new_f if fisher_accum is None else \
-                {n: fisher_accum[n] + new_f[n] for n in new_f}
+            ewc_memories.append((current_snapshot, new_f))
 
-        print(f"  [{method.upper():>3}]  finished phase {phase + 1}  "
-              f"task accs = "
-              + ", ".join(f"{accuracies[t][-1]:.3f}" for t in range(3)))
+        lam_str = f" (λ={best_lam})" if phase > 0 and method != 'sgd' else ""
+        print(f"  [{method.upper():>3}] finished phase {phase + 1}{lam_str:^16} | "
+              f"Task Accs: " + ", ".join(f"{accuracies[t][-1]:.3f}" for t in range(3)))
 
     return accuracies
 
@@ -191,7 +237,7 @@ def run(method):
 # ──────────────────────────────────────────────────────────────
 results = {}
 for method in ['sgd', 'l2', 'ewc']:
-    print(f"\nTraining {method.upper()} ...")
+    print(f"\nTraining {method.upper()} with Cross-Validation ...")
     results[method] = run(method)
 print("\nAll runs complete.\n")
 
@@ -222,8 +268,7 @@ for tid, ax in enumerate(axes):
         )
 
     for b in phase_boundaries_x:
-        ax.axvline(b + 0.5, color='gray', linestyle='--',
-                   linewidth=1, alpha=0.7)
+        ax.axvline(b + 0.5, color='gray', linestyle='--', linewidth=1, alpha=0.7)
 
     ax.set_ylim(0.5, 1.02)
     ax.set_yticks([0.5, 0.75, 1.0])
@@ -261,7 +306,7 @@ axes[-1].set_xlabel("Training time", fontsize=12)
 
 plt.subplots_adjust(left=0.13, right=0.94, top=0.92, bottom=0.10, hspace=0.35)
 
-out_path = os.path.join(HERE, 'ewc_paper_plot.png')
+out_path = os.path.join(HERE, 'ewc_cv_paper_plot_fixed.png')
 plt.savefig(out_path, dpi=170, bbox_inches='tight')
 plt.show()
 print(f"Saved -> {out_path}")
