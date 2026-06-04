@@ -1,0 +1,380 @@
+Job 2471049 on nid007655
+CPUs allocated (cpus-per-task): 80
+Started: Thu Jun  4 06:50:11 PM CEST 2026
+Running 20000 simulations on 80 worker(s) (N=500, M=200, |RHO|=10, |MU|=10) ...
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last ten iterations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+/iopsstor/scratch/cscs/tperez/cluster/spike_lib.py:164: RuntimeWarning: The iteration is not making good progress, as measured by the 
+ improvement from the last five Jacobian evaluations.
+  lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
+Simulations done in 30.1 s.
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.00.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.11.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.22.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.33.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.44.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.56.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.67.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.78.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.89.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_1.00.png
+
+Saved numerics -> /iopsstor/scratch/cscs/tperez/cluster/results/AB_comparison.csv  (200 rows)
+Saved numerics -> /iopsstor/scratch/cscs/tperez/cluster/results/AB_comparison.npz
+Total wall time 33.8 s. Output in: /iopsstor/scratch/cscs/tperez/cluster/results
+Finished: Thu Jun  4 06:50:50 PM CEST 2026
