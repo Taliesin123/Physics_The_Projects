@@ -8,9 +8,9 @@
 #SBATCH --mem=200000                   # plenty: matrices are only a few MB each.
                                     #     (800G is unnecessary; raising it will
                                     #     NOT make the run faster.)
-#SBATCH --time=01:30:00             # walltime; raise for big N / M / grids.
+#SBATCH --time=4:00:00             # walltime; raise for big N / M / grids.
 #SBATCH --output=slurm-%j.out       # stdout/stderr -> submit dir
-#SBATCH --partition=debug
+#SBATCH --partition=normal
 #SBATCH --account=infra01
 # NOTE: this code is CPU-only. Do NOT request a GPU -- it goes unused and
 # only makes you wait longer in the queue. (No --gres=gpu line on purpose.)
@@ -36,6 +36,8 @@ echo "CPUs allocated (cpus-per-task): ${SLURM_CPUS_PER_TASK}"
 echo "Started: $(date)"
 
 # The script auto-reads SLURM_CPUS_PER_TASK for its worker count.
-srun python run_AB_comparison.py
+#srun python run_AB_comparison.py
+#srun python check_methodB_norm.py
+srun python run_loss_sweeps.py
 
 echo "Finished: $(date)"

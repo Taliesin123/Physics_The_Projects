@@ -179,9 +179,7 @@ class TwoSpikes:
     def Loss_eval(self, method):
         theta = self.theta[method]
         L = self.alpha*np.linalg.norm(self.Y1 - np.outer(theta, theta), 'fro')**2 + np.sqrt(1-self.alpha**2)*np.linalg.norm(self.Y2 - np.outer(theta, theta), 'fro')**2
-        o1, o2 = self.overlaps(method)
-        L = o1 + o2
-        return -L
+        return L
 
 ## NAIVE 
 

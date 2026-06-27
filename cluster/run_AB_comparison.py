@@ -47,6 +47,7 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
+from scipy.optimize import brentq
 
 import spike_lib as sl
 
@@ -59,10 +60,18 @@ LAMBDA1 = 3.0                    # strength of spike 1
 LAMBDA2 = 2.0                    # strength of spike 2
 M = 200                          # resamples per point (averaging precision)
 
-MU = np.linspace(0.01, 1.0, 10)  # regularization strengths to sweep
-RHO = np.linspace(0.0, 1.0, 10)   # spike correlations to compare
+# Predicted optimal regularization strength for Method B (friend's tip):
+#   mu_opt = lambda2 / (2 (1 - lambda1)^2)        (== sl.mu_equilibrium)
+#MU_OPT = LAMBDA2 / (2 * (1 - LAMBDA1) ** 2)
 
-METHODS = ["A", "B"]             # the two estimators under comparison
+# Sweep mu in a window *centred* on MU_OPT so we test the predicted optimum
+# directly and see B rise to its best (and overtake A) around it. With 25
+# points spanning [0.25, 1.75] * MU_OPT, the exact centre point == MU_OPT.
+MU = np.linspace(0, 0.4, 100)
+#MU = np.linspace(0.01, 1.0, 10)  # (old) uniform sweep, for reference
+RHO = [0.0, 0.1, 0.2, 0.4, 0.5, 0.75, 1.0]   # spike correlations to compare
+
+METHODS = ["A", "B", "naive"]    # estimators under comparison (+naive baseline)
 
 MAKE_PLOTS = True                # False -> data only, no matplotlib needed
 SEED = 0                         # base seed; set to None for non-reproducible
@@ -107,6 +116,7 @@ def plot_one_rho(res, rho, outpath):
     style = {
         "A": dict(fmt="o-", color="steelblue", label="Method A"),
         "B": dict(fmt="s-", color="tomato", label="Method B"),
+        "naive": dict(fmt="^--", color="seagreen", label="Naive spectral"),
     }
     mu_vals = res["values"]
     panels = [

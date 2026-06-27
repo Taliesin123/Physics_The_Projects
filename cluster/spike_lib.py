@@ -39,7 +39,7 @@ Two estimators are compared:
 """
 
 import numpy as np
-from scipy.optimize import fsolve
+from scipy.optimize import brentq
 
 
 # ----------------------------------------------------------------------
@@ -48,11 +48,117 @@ from scipy.optimize import fsolve
 def norm_constraint(lam, A, b, N):
     """Residual ||theta(lam)|| - 1 for theta solving (A - lam*I) theta = b.
 
-    Method B picks the Lagrange multiplier ``lam`` as the root of this
-    function, i.e. the value for which the solution already has unit norm.
+    Kept for reference only. The robust solver below replaces the naive
+    ``fsolve(norm_constraint, ...)`` call, which diverged through the poles
+    of this function.
     """
     theta = np.linalg.solve(A - lam * np.eye(N), b)
     return np.linalg.norm(theta) - 1.0
+
+
+def solve_norm_constrained(A, b, tol=1e-12):
+    """Solve the unit-norm-constrained stationarity equation for Method B.
+
+    Method B *maximizes* the regularized objective
+
+        f(theta) = theta^T A theta + 2 b^T theta      subject to ||theta|| = 1,
+
+    whose stationarity condition is ``(A - lam*I) theta = -b``, i.e.
+
+        theta(lam) = (lam*I - A)^{-1} b = sum_k c_k / (lam - e_k) * u_k,
+
+    with the symmetric eigendecomposition ``A = sum_k e_k u_k u_k^T`` and
+    ``c_k = u_k . b``. The squared norm
+
+        phi(lam) = ||theta(lam)||^2 = sum_k c_k^2 / (lam - e_k)^2
+
+    has a double pole at every eigenvalue of ``A``.
+
+    Which root to pick (this is the whole game)
+    -------------------------------------------
+    A constrained *maximizer* on the sphere requires the Lagrange multiplier
+    to satisfy ``lam >= e_max`` so that ``(lam*I - A)`` is positive definite
+    (the classic trust-region condition). On ``(e_max, +inf)`` the matrix is
+    PD and ``phi`` is smooth and strictly *decreasing* from +inf (as
+    ``lam -> e_max^+``) to 0 (as ``lam -> +inf``), so ``phi(lam) = 1`` has a
+    *unique* root there -- the global maximizer, the top-eigenvector branch
+    that actually recovers the signal.
+
+    NOTE: an earlier version bracketed the root on ``(-inf, e_min)`` instead.
+    That is the *minimization* branch: it returns the bottom eigenvector of
+    ``A`` (pure noise), which is why Method B never recovered the signal --
+    and why shrinking mu made it worse, since mu->0 sends theta straight to
+    ``u_min(A)``. We now bracket the upper branch.
+
+    The "hard case"
+    ---------------
+    If ``b`` has (almost) no component along the *top* eigenspace of ``A``,
+    the pole of ``phi`` at ``e_max`` vanishes and ``phi(lam)`` stays bounded
+    as ``lam -> e_max^+``. Its supremum ``L`` may be ``<= 1``, so there is no
+    root above ``e_max``; the constrained maximizer then sits exactly at
+    ``lam = e_max`` with a compensating component along the top eigenvector
+    added so that ``||theta|| = 1``. Detected and handled explicitly.
+
+    Returns
+    -------
+    (theta, lam) with ``theta`` of unit norm and ``lam >= e_max``.
+    """
+    # A is symmetric by construction (Y2, F1 and I are all symmetric).
+    evals, evecs = np.linalg.eigh(A)            # ascending eigenvalues
+    c = evecs.T @ b                             # b in the eigenbasis
+    e_max = evals[-1]
+    span = max(1.0, abs(e_max))
+
+    def phi(lam):
+        return np.sum((c / (lam - evals)) ** 2)
+
+    # Top eigenspace (group near-degenerate eigenvalues) and how much of
+    # b lives in it.
+    deg = evals >= e_max - 1e-9 * span
+    free = ~deg
+    c_max_norm = np.linalg.norm(c[deg])
+
+    def hard_case_solution():
+        """Solution at ``lam = e_max`` plus a u_max component for unit norm."""
+        if free.any():
+            theta_perp = evecs[:, free] @ (c[free] / (e_max - evals[free]))
+        else:
+            theta_perp = np.zeros_like(b, dtype=float)
+        n2 = float(theta_perp @ theta_perp)
+        tau = np.sqrt(max(0.0, 1.0 - n2))       # fill the remaining norm
+        theta = theta_perp + tau * evecs[:, -1]
+        nrm = np.linalg.norm(theta)
+        if nrm == 0.0:                          # b ~ 0: any unit vector works
+            return evecs[:, -1], e_max
+        return theta / nrm, e_max
+
+    # ---- Hard case: phi cannot reach 1 above e_max -> no exterior root. ----
+    if c_max_norm <= 1e-9 * max(1.0, np.linalg.norm(b)):
+        L = (np.sum((c[free] / (e_max - evals[free])) ** 2)
+             if free.any() else 0.0)
+        if L <= 1.0:
+            return hard_case_solution()
+        # else a genuine exterior root exists; fall through to bracketing.
+
+    # ---- Standard case: bracket the unique root in (e_max, +inf). ----------
+    # Near end: approach the pole at e_max until phi > 1.
+    lo = e_max + 1e-9 * span
+    while phi(lo) <= 1.0:
+        gap = lo - e_max
+        if gap < 1e-15 * span:                  # pole too weak to reach 1
+            return hard_case_solution()
+        lo = e_max + gap * 0.1
+
+    # Far end: far enough right that phi < 1.
+    hi = e_max + span
+    while phi(hi) >= 1.0:
+        hi += span
+
+    # Guaranteed sign change now: phi(hi) < 1 < phi(lo).
+    lam = brentq(lambda l: phi(l) - 1.0, lo, hi,
+                 xtol=tol, rtol=1e-14, maxiter=200)
+    theta = evecs @ (c / (lam - evals))         # = (lam*I - A)^{-1} b
+    return theta / np.linalg.norm(theta), lam
 
 
 # ----------------------------------------------------------------------
@@ -118,6 +224,20 @@ class TwoSpikes:
             x_hat = x_new
         return x_hat
 
+    @staticmethod
+    def top_eigenvector(M):
+        """Eigenvector of the algebraically LARGEST eigenvalue of symmetric M.
+
+        This is the spectral estimator we actually want for signal recovery
+        (the planted spike sits at the most-positive eigenvalue). Plain
+        ``power_iteration`` converges to the largest *magnitude* eigenvalue
+        instead, so whenever the noise floor ``e_min`` is larger in magnitude
+        than the signal ``e_max`` (e.g. Method A at small mu) it returns the
+        bottom (noise) eigenvector. ``eigh`` avoids that trap entirely.
+        """
+        _, evecs = np.linalg.eigh(M)            # ascending eigenvalues
+        return evecs[:, -1]
+
     def fisher_MS(self, x, lam):
         """Fisher information matrix F(x) used for the regularizer."""
         N = self.N
@@ -134,7 +254,10 @@ class TwoSpikes:
         return self.theta["1"]
 
     def compute_naive(self):
-        self.theta["naive"] = self.power_iteration(self.naive_matrix)
+        # Naive spectral baseline: top eigenvector of a fixed blend of Y1, Y2
+        # (independent of mu). Use the algebraically-largest eigenvector so it
+        # tracks the signal rather than the larger-magnitude noise edge.
+        self.theta["naive"] = self.top_eigenvector(self.naive_matrix)
         return self.theta["naive"]
 
     def x_fisher(self, method, solve=True):
@@ -154,15 +277,16 @@ class TwoSpikes:
         thetaB = np.zeros(N)
 
         if "A" in method:
-            # Method A: top eigenvector of A
-            thetaA = self.power_iteration(A)
+            # Method A: algebraically-largest eigenvector of A (the signal
+            # spike). power_iteration would grab the larger-magnitude noise
+            # edge at small mu, so use eigh-based top_eigenvector instead.
+            thetaA = self.top_eigenvector(A)
 
         if "B" in method:
             # Method B: norm-constrained solve (A - lam*I) theta = b
             b = 2 * mu * F1 @ self.theta["1"]
             if solve:
-                lam = fsolve(norm_constraint, x0=-4, args=(A, b, N))[0]
-                thetaB = np.linalg.solve(A - lam * np.eye(N), b)
+                thetaB, _ = solve_norm_constrained(A, b)
             else:
                 # direct (un-constrained) fallback; kept for reference
                 if np.linalg.cond(A) < 1e12:
@@ -197,6 +321,9 @@ class TwoSpikes:
     def overlaps(self, method):
         """Absolute overlaps |theta . x1| and |theta . x2|."""
         theta = self.theta[method]
+        nrm = np.linalg.norm(theta)
+        if nrm > 0:
+            theta = theta / nrm          # compare unit vectors (both A and B)
         overlap1 = abs(np.dot(theta, self.x1))
         overlap2 = abs(np.dot(theta, self.x2))
         return overlap1, overlap2
@@ -205,6 +332,20 @@ class TwoSpikes:
         """Loss used for cross-validation: minus the sum of the overlaps."""
         o1, o2 = self.overlaps(method)
         return -(o1 + o2)
+
+    def Loss_eval_2(self, method):
+        """Rank-1 reconstruction loss of the estimate against BOTH observations.
+
+        With ``P = theta theta^T`` (rank-1, unit-norm theta), this is the
+        alpha-weighted squared Frobenius reconstruction error of Y1 and Y2:
+
+            L = alpha * ||Y1 - P||_F^2 + sqrt(1 - alpha^2) * ||Y2 - P||_F^2.
+        """
+        theta = self.theta[method]
+        L = (self.alpha * np.linalg.norm(self.Y1 - np.outer(theta, theta), 'fro') ** 2
+             + np.sqrt(1 - self.alpha ** 2)
+             * np.linalg.norm(self.Y2 - np.outer(theta, theta), 'fro') ** 2)
+        return L
 
 
 # ----------------------------------------------------------------------
