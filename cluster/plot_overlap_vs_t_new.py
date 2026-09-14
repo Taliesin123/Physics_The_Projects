@@ -1,0 +1,150 @@
+"""
+plot_overlap_vs_t.py
+=====================
+
+Pour le modele a N_task spikes correles (spike_lib_N.TwoSpikes), trace
+l'overlap MOYEN CUMULE en fonction de t :
+
+    y(t) = mean( overlap[0], overlap[1], ..., overlap[t] )
+
+pour t = 0, ..., N_task-1, soit la moyenne de l'alignement |theta_hat_s . x_s|
+sur toutes les taches s deja vues jusqu'a l'instant t.
+
+3 courbes :
+  - "naive"  : estimateur naif unique (pas de CV necessaire)
+  - "A"      : chaine Fisher-regularisee, methode A, mu UNIQUE choisi par CV
+               (cv_mu_N), applique a CHAQUE etape de la chaine
+  - "B"      : idem, methode B
+
+Depend de spike_lib_N.py (doit etre dans le meme dossier) :
+    from spike_lib_N import TwoSpikes, cv_mu_N, mu_equilibrium_N
+
+Usage:
+    python plot_overlap_vs_t.py
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from spike_lib_Ntasks import NSpikes, cv_mu_N, mu_equilibrium_N
+
+
+def run_overlap_vs_t(N, N_task, rho, lam,
+                      n_mu_grid=15, mu_window=0.75, M_cv=10,
+                      M_final=30, seed=0):
+    """
+    1) Cross-validation UNIQUE par methode (cv_mu_N) -> mu_opt["A"], mu_opt["B"]
+       (un seul mu, applique a CHAQUE etape de la chaine -- pas de CV par etape).
+    2) M_final resamples du modele complet ; a chaque resample, on fait
+       tourner la chaine A et la chaine B avec ce mu fixe, et a chaque t on
+       calcule l'overlap du DERNIER estimateur contre TOUTES les cibles vues
+       jusque-la (overlaps_cumulative -- voir spike_lib_N.py).
+    3) Moyenne (+ erreur-type) de cette quantite sur les M_final resamples.
+ 
+    Returns
+    -------
+    t_values : array (N_task,)
+    curves   : dict method -> dict avec "mean" (array N_task) et
+               "sem" (array N_task) -- erreur-type sur les M_final resamples
+    mu_opt   : dict method -> float, le mu unique retenu par la CV
+    """
+    rng_seed = seed
+    if rng_seed is not None:
+        np.random.seed(rng_seed)
+ 
+    # ---- 1) CV unique par methode (PAS par etape) ----------------------
+    mu_eq = mu_equilibrium_N(lam)
+    MU_grid = mu_eq * np.linspace(max(1e-6, 1 - mu_window),
+                                   1 + mu_window, n_mu_grid)
+    MU_grid = MU_grid[MU_grid > 0]
+ 
+    mu_opt_A, _, _ = cv_mu_N(MU_grid, N, N_task, rho, lam, M=M_cv, method="A")
+    mu_opt_B, _, _ = cv_mu_N(MU_grid, N, N_task, rho, lam, M=M_cv, method="B")
+    mu_opt = {"A": mu_opt_A, "B": mu_opt_B}
+ 
+    # ---- 2) M_final resamples, overlap CUMULATIF (vs toutes les cibles) ---
+    t_values = np.arange(N_task)
+    raw_naive = np.zeros((M_final, N_task))
+    raw_A = np.zeros((M_final, N_task))
+    raw_B = np.zeros((M_final, N_task))
+ 
+    for r in range(M_final):
+        S = NSpikes(N, N_task, lam, rho, mu=1.0)  # mu de construction
+        # ecrase a chaque etape -- non utilise directement
+ 
+        for t in range(1, N_task):
+            S.compute_naive(t)
+            S.muA = mu_opt["A"]
+            S.compute_methodA(t)
+            S.muB = mu_opt["B"]
+            S.compute_methodB(t)
+ 
+            ov = S.overlaps(["naive", "A", "B"],time = t)
+            naive = np.mean(ov["naive"])
+            raw_naive[r][t] = np.sum(ov["naive"])/(t+1)
+            raw_A[r][t] = np.sum(ov["A"])
+            raw_B[r][t] = np.sum(ov["B"])
+ 
+    curves = {}
+    for name, raw in (("naive", raw_naive), ("A", raw_A), ("B", raw_B)):
+        curves[name] = {
+            "mean": raw.mean(axis=0),
+            "sem": raw.std(axis=0) / np.sqrt(M_final),
+        }
+ 
+    return t_values, curves, mu_opt
+
+def plot_overlap_vs_t(t_values, curves, N, N_task, rho, lam, fname=None,
+                       figsize=(7, 5), dpi=150):
+    style = {
+        "naive": dict(color="seagreen", marker="^", linestyle="--",
+                      label="Naive"),
+        "A": dict(color="steelblue", marker="o", linestyle="-",
+                  label="Method A (CV)"),
+        "B": dict(color="tomato", marker="s", linestyle="-",
+                  label="Method B (CV)"),
+    }
+
+    fig, ax = plt.subplots(figsize=figsize)
+    for m in ("naive", "A", "B"):
+        mean = curves[m]["mean"]
+        sem = curves[m]["sem"]
+        ax.errorbar(t_values, mean, yerr=sem, capsize=3, linewidth=1.8,
+                    markersize=6, **style[m])
+
+    ax.set_xlabel(r"$t$", fontsize=12)
+    ax.set_ylabel(r"Mean overlap over tasks $0..t$", fontsize=12)
+    ax.set_xlim(t_values[0], t_values[-1])
+    ax.set_ylim(0, 1.05)
+    ax.grid(alpha=0.3)
+    ax.legend(fontsize=10)
+    fig.suptitle(
+        rf"Cumulative mean overlap vs $t$  "
+        rf"($N={N}$, $K={N_task}$, $\rho={rho}$, $\lambda={lam}$)",
+        fontsize=12)
+    fig.tight_layout()
+
+    if fname:
+        fig.savefig(fname, dpi=dpi, bbox_inches="tight")
+    plt.show()
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    N = 100
+    N_task = 8
+    rho = 0.2
+    lam = 3.0
+
+    t_values, curves, mu_opt = run_overlap_vs_t(
+        N, N_task, rho, lam,
+        n_mu_grid=15, mu_window=0.75,
+        M_cv=10, M_final=30,
+        seed=0,
+    )
+
+    print("mu_opt A:", np.round(mu_opt["A"], 3))
+    print("mu_opt B:", np.round(mu_opt["B"], 3))
+
+    plot_overlap_vs_t(t_values, curves, N, N_task, rho, lam,
+                       fname="overlap_vs_t.png")

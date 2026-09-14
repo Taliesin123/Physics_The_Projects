@@ -151,7 +151,7 @@ class TwoSpikes:
         if "B" in method:
             b = 2*mu * F1 @ self.theta["1"]
             if solve:
-                lam = fsolve(norm_constraint, x0=-4, args=(A, b, self.N))[0]
+                lam = fsolve(norm_constraint, x0=-3.5, args=(A, b, self.N))[0]
 
                 thetaB = np.linalg.solve(
                     A - lam*np.eye(self.N),
@@ -179,7 +179,7 @@ class TwoSpikes:
     def Loss_eval(self, method):
         theta = self.theta[method]
         L = self.alpha*np.linalg.norm(self.Y1 - np.outer(theta, theta), 'fro')**2 + np.sqrt(1-self.alpha**2)*np.linalg.norm(self.Y2 - np.outer(theta, theta), 'fro')**2
-        return L
+        return -L
 
 ## NAIVE 
 
@@ -327,8 +327,8 @@ def run_experiment_2D(vary_param_x, vary_values_x, vary_param_y, vary_values_y,
 
             for _ in range(M):
                 S= TwoSpikes(params['n'], params['k1'],  params['k2'], params['rho'])
-                # if mu_opt:
-                #     mu_opt, _, _ = cv_mu
+                if mu_opt:
+                    mu_opt, _, _ = cv_mu
                 if "naive" in method: 
                     S.compute_naive()
                     m1, m2= S.overlaps("naive")

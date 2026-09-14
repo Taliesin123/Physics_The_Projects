@@ -285,16 +285,16 @@ class TwoSpikes:
         if "B" in method:
             # Method B: norm-constrained solve (A - lam*I) theta = b
             b = 2 * mu * F1 @ self.theta["1"]
-            if solve:
-                thetaB, _ = solve_norm_constrained(A, b)
-            else:
-                # direct (un-constrained) fallback; kept for reference
-                if np.linalg.cond(A) < 1e12:
-                    thetaB = np.linalg.inv(A - np.eye(N)) @ b
-                else:
-                    raise np.linalg.LinAlgError(
-                        f"A nearly singular (cond={np.linalg.cond(A):.2e})"
-                    )
+          
+            thetaB, _ = solve_norm_constrained(A, b)
+            # else:
+            #     # direct (un-constrained) fallback; kept for reference
+            #     if np.linalg.cond(A) < 1e12:
+            #         thetaB = np.linalg.inv(A - np.eye(N)) @ b
+            #     else:
+            #         raise np.linalg.LinAlgError(
+            #             f"A nearly singular (cond={np.linalg.cond(A):.2e})"
+            #         )
 
         return thetaA, thetaB
 
@@ -363,7 +363,7 @@ def cv_mu(MU, N, rho, lambda1, lambda2, M=10, method="A"):
         for _ in range(M):
             S = TwoSpikes(N, lambda1, lambda2, rho, mu=mu)
             S.compute_method([method])
-            score.append(S.Loss_eval(method))
+            score.append(S.Loss_eval_2(method))
         score = np.array(score)
         scores.append(np.mean(score))
         scores_std.append(np.std(score) / np.sqrt(M))
