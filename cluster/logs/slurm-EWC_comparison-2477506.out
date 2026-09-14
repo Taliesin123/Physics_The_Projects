@@ -1,0 +1,27 @@
+Job 2477506 on nid007655
+CPUs allocated: 16
+Started: Fri Jun  5 11:06:13 PM CEST 2026
+0: Loading Full MNIST on cuda...
+0: Pre-rotating datasets (one-time, ~minutes)...
+0: Datasets resident on cuda
+0: 
+0: Training SGD with Cross-Validation ...
+0:   [SGD] finished phase 1                 | Task Accs: 0.981, 0.514, 0.142
+0:   [SGD] finished phase 2                 | Task Accs: 0.500, 0.981, 0.477
+0:   [SGD] finished phase 3                 | Task Accs: 0.168, 0.554, 0.981
+0: 
+0: Training L2 with Cross-Validation ...
+0:   [ L2] finished phase 1                 | Task Accs: 0.981, 0.514, 0.142
+0:   [ L2] finished phase 2    (λ=0.05)     | Task Accs: 0.719, 0.892, 0.350
+0:   [ L2] finished phase 3     (λ=0.1)     | Task Accs: 0.403, 0.505, 0.861
+0: 
+0: Training EWC with Cross-Validation ...
+0:   [EWC] finished phase 1                 | Task Accs: 0.981, 0.514, 0.142
+0:   [EWC] finished phase 2 (λ=100000000.0) | Task Accs: 0.621, 0.980, 0.520
+0:   [EWC] finished phase 3 (λ=100000000.0) | Task Accs: 0.252, 0.643, 0.978
+0: 
+0: All runs complete.
+0: 
+0: Saved data -> /iopsstor/scratch/cscs/tperez/cluster/ewc_rotated_mnist_data.csv
+0: Saved plot -> /iopsstor/scratch/cscs/tperez/cluster/ewc_rotated_mnist_plot.png
+Finished: Fri Jun  5 11:28:28 PM CEST 2026

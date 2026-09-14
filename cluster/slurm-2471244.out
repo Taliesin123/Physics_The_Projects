@@ -1,0 +1,26 @@
+Job 2471244 on nid006195
+CPUs allocated (cpus-per-task): 80
+Started: Thu Jun  4 08:28:04 PM CEST 2026
+Running 40000 simulations on 80 worker(s) (N=500, M=200, |RHO|=8, |MU|=25) ...
+Simulations done in 29.9 s.
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.00.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.10.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.20.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.30.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.40.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.50.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_0.75.png
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/AB_vs_mu_rho_1.00.png
+
+Saved numerics -> /iopsstor/scratch/cscs/tperez/cluster/results/AB_comparison.csv  (400 rows)
+Saved numerics -> /iopsstor/scratch/cscs/tperez/cluster/results/AB_comparison.npz
+Total wall time 34.0 s. Output in: /iopsstor/scratch/cscs/tperez/cluster/results
+params: N=500, lambda1=3.0, lambda2=2.0, rho=0.5, mu=0.2500
+spectrum of A: [e_min, e_max] = [-3.003, 2.163]
+Method B Lagrange multiplier lam = -3.1165  (< e_min)
+||theta_B(lam)|| = 1.000000  (should be 1)
+overlaps  A: |x1|=0.016 |x2|=0.014  mean=0.015
+overlaps  B: |x1|=0.512 |x2|=0.105  mean=0.309
+
+wrote /iopsstor/scratch/cscs/tperez/cluster/results/methodB_norm_vs_lambda.png
+Finished: Thu Jun  4 08:28:49 PM CEST 2026

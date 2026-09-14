@@ -1,0 +1,13 @@
+Job 2476434 on nid006272
+CPUs allocated (cpus-per-task): 80
+Started: Fri Jun  5 11:28:15 PM CEST 2026
+[phase 1] loss vs mu: 40000 sims on 80 worker(s) (|MU|=40, M=1000) ...
+[phase 1] best mu: mu*_A=0.3665  mu*_B=0.2728
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/loss_vs_mu.png
+[phase 2a] sweep lambda1: re-selecting mu (max mean overlap) over 40 values at each of 50 points (2000000 selection sims + 50000 overlap sims) ...
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/overlaps_vs_lambda1.png
+[phase 2b] sweep rho: re-selecting mu (max mean overlap) over 40 values at each of 50 points (2000000 selection sims + 50000 overlap sims) ...
+    wrote /iopsstor/scratch/cscs/tperez/cluster/results/overlaps_vs_rho.png
+Saved numerics -> /iopsstor/scratch/cscs/tperez/cluster/results/loss_sweeps.npz
+Total wall time 4597.4 s. Output in: /iopsstor/scratch/cscs/tperez/cluster/results
+Finished: Sat Jun  6 12:44:57 AM CEST 2026
