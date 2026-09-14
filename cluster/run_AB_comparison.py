@@ -58,7 +58,7 @@ import spike_lib as sl
 N = 500                          # signal dimension
 LAMBDA1 = 3.0                    # strength of spike 1
 LAMBDA2 = 2.0                    # strength of spike 2
-M = 200                          # resamples per point (averaging precision)
+M = 20                          # resamples per point (averaging precision)
 
 # Predicted optimal regularization strength for Method B (friend's tip):
 #   mu_opt = lambda2 / (2 (1 - lambda1)^2)        (== sl.mu_equilibrium)
@@ -67,7 +67,7 @@ M = 200                          # resamples per point (averaging precision)
 # Sweep mu in a window *centred* on MU_OPT so we test the predicted optimum
 # directly and see B rise to its best (and overtake A) around it. With 25
 # points spanning [0.25, 1.75] * MU_OPT, the exact centre point == MU_OPT.
-MU = np.linspace(0, 0.4, 100)
+MU = np.linspace(0, 0.4, 20)
 #MU = np.linspace(0.01, 1.0, 10)  # (old) uniform sweep, for reference
 RHO = [0.0, 0.1, 0.2, 0.4, 0.5, 0.75, 1.0]   # spike correlations to compare
 
