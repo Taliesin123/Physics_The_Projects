@@ -6,4 +6,4 @@ __pycache__/
 *.pyd
 
 # Ignore les résultats
-Results/
+Results/.DS_Store
