@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import model as md
 import model_2 as m
 import importlib
 importlib.reload(m)
