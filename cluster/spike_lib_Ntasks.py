@@ -124,8 +124,9 @@ class NSpikes:
 
     def __init__(self, N, N_task, lam, rho, mu=1.0):
         self.N = N                  # signal dimension
-        self.N_task = N_task        # number K of correlated spikes
         self.lam = lam              # SAME lambda for every task
+      
+        self.N_task = lam.size     # number K of correlated spikes
         self.rho = rho
         self.muA = mu
         self.muB = mu
@@ -165,7 +166,7 @@ class NSpikes:
 
         Y = np.empty((self.N, self.N, K))
         for t in range(K):
-            Y[:, :, t] = self.lam * np.outer(X[:, t], X[:, t]) \
+            Y[:, :, t] = self.lam[t] * np.outer(X[:, t], X[:, t]) \
                 + self.symmetric_gaussian_matrix()
 
         return Y, X
@@ -227,12 +228,12 @@ class NSpikes:
         thetaB = np.zeros(N)
 
         if "A" in method:
-            F_prev = self.fisher_MS(self.theta[t - 1]["A"], self.lam)
+            F_prev = self.fisher_MS(self.theta[t - 1]["A"], self.lam[t-1])
             A_t = self.Y[:, :, t] - np.eye(N) + 2 * self.muA * F_prev
             thetaA = self.top_eigenvector(A_t)
 
         if "B" in method:
-            F_prev = self.fisher_MS(self.theta[t - 1]["B"], self.lam)
+            F_prev = self.fisher_MS(self.theta[t - 1]["B"], self.lam[t-1])
             A_t = self.Y[:, :, t] - np.eye(N) + 2 * self.muB * F_prev
             b = 2 * self.muB * F_prev @ self.theta[t - 1]["B"]
             thetaB, _ = solve_norm_constrained(A_t, b)
@@ -368,48 +369,30 @@ def cv_mu_N(MU, N, N_task, rho, lam, M=10, method="A"):
 # ----------------------------------------------------------------------
 def cv_mu_chain(N, N_task, rho, lam, n_mu_grid=15, mu_window=0.75, M=10,
                  methods=("A", "B"), seed=None):
-    """Sequential, per-step CV: find mu_t (t=1..N_task-1), SEPARATELY for
-    method A and method B, that minimizes the average reconstruction loss
-    of theta_hat_t against Y_t ALONE:
+    # lam est maintenant un vecteur de longueur N_task
+    lam = np.asarray(lam)                           # <-- NOUVEAU : cast en array
 
-        L_t(theta) = ||Y_t - theta theta^T||_F^2
-
-    This is the only criterion available "locally" at step t in a
-    sequential setting (it does not peek at future data). The grid of
-    candidate mu is centered on mu_equilibrium_N(lam):
-
-        MU_grid = mu_eq * linspace(1 - mu_window, 1 + mu_window, n_mu_grid)
-
-    Efficiency note: for a fixed resample, the chain up to step t-1 does
-    NOT depend on the candidate mu_t, so it is built ONCE per resample and
-    reused for every candidate in MU_grid -- only the last step is redone
-    for each candidate (cheap), instead of recomputing the whole chain
-    n_mu_grid times.
-
-    Returns
-    -------
-    mu_opt : dict method -> array of length N_task
-             mu_opt[m][0] is unused (np.nan): step 0 has no regularizer.
-             mu_opt[m][t] is the CV-selected mu for step t (t=1..N_task-1).
-    """
     if seed is not None:
         np.random.seed(seed)
-
-    mu_eq = mu_equilibrium_N(lam)
-    MU_grid = mu_eq * np.linspace(max(1e-6, 1 - mu_window),
-                                   1 + mu_window, n_mu_grid)
-    MU_grid = MU_grid[MU_grid > 0]
 
     mu_opt = {m: np.full(N_task, np.nan) for m in methods}
 
     for m in methods:
         for t in range(1, N_task):
+
+            # --- NOUVEAU : mu_eq et MU_grid recalcules a chaque etape t ---
+            mu_eq_t = mu_equilibrium_N(lam[t])
+            mu_eq_t = min(mu_eq_t, 10.0)            # clip pour eviter divergence en lam~1
+            MU_grid = mu_eq_t * np.linspace(max(1e-6, 1 - mu_window),
+                                             1 + mu_window, n_mu_grid)
+            MU_grid = MU_grid[MU_grid > 0]
+            # --------------------------------------------------------------
+
             scores = np.zeros(len(MU_grid))
             for _ in range(M):
-                S = NSpikes(N, N_task, lam, rho, mu=mu_eq)
+                mu_init = min(mu_equilibrium_N(lam[0]), 10.0)  # <-- NOUVEAU
+                S = NSpikes(N, N_task, lam, rho, mu=mu_init)   # <-- lam = vecteur
 
-                # Build the chain up to t-1 using the ALREADY-DETERMINED
-                # mu's from previous (earlier-t) CV iterations.
                 for tp in range(1, t):
                     if m == "A":
                         S.muA = mu_opt["A"][tp]
@@ -418,8 +401,6 @@ def cv_mu_chain(N, N_task, rho, lam, n_mu_grid=15, mu_window=0.75, M=10,
                         S.muB = mu_opt["B"][tp]
                         S.compute_methodB(tp)
 
-                # Try every candidate mu_t, reusing the SAME chain so far
-                # (only the last step is recomputed each time).
                 for k, mu in enumerate(MU_grid):
                     if m == "A":
                         S.muA = mu

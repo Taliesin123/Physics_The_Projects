@@ -27,13 +27,13 @@ Depend de spike_lib_N.py (doit etre dans le meme dossier) :
     from spike_lib_N import TwoSpikes, cv_mu_N, mu_equilibrium_N
 
 Usage:
-    python plot_overlap_vs_t.py
+    python plot_loss_vs_t.py
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from spike_lib_Ntasks import NSpikes, cv_mu_N, mu_equilibrium_N
+from spike_lib_Ntasks import NSpikes, cv_mu_chain, mu_equilibrium_N
 
 
 def run_overlap_vs_t(N, N_task, rho, lam,
@@ -65,9 +65,9 @@ def run_overlap_vs_t(N, N_task, rho, lam,
                                    1 + mu_window, n_mu_grid)
     MU_grid = MU_grid[MU_grid > 0]
 
-    mu_opt_A, _, _ = cv_mu_N(MU_grid, N, N_task, rho, lam, M=M_cv, method="A")
-    mu_opt_B, _, _ = cv_mu_N(MU_grid, N, N_task, rho, lam, M=M_cv, method="B")
-    mu_opt = {"A": mu_opt_A, "B": mu_opt_B}
+    mu_opt = cv_mu_chain(N, N_task, rho, lam,
+                              n_mu_grid=n_mu_grid, mu_window=mu_window,
+                              M=M_cv, methods=("A", "B"), seed=None)
 
     # ---- 2) M_final resamples, overlap CUMULATIF (vs toutes les cibles) ---
     t_values = np.arange(N_task)
@@ -161,15 +161,10 @@ def run_loss_vs_t(N, N_task, rho, lam,
         np.random.seed(seed)
 
     # ---- 1) CV unique par methode --------------------------------------
-    mu_eq = mu_equilibrium_N(lam)
-    MU_grid = mu_eq * np.linspace(max(1e-6, 1 - mu_window),
-                                   1 + mu_window, n_mu_grid)
-    MU_grid = MU_grid[MU_grid > 0]
-
-    mu_opt_A, _, _ = cv_mu_N(MU_grid, N, N_task, rho, lam, M=M_cv, method="A")
-    mu_opt_B, _, _ = cv_mu_N(MU_grid, N, N_task, rho, lam, M=M_cv, method="B")
-    mu_opt = {"A": mu_opt_A, "B": mu_opt_B}
-
+    
+    mu_opt = cv_mu_chain(N, N_task, rho, lam,
+                              n_mu_grid=n_mu_grid, mu_window=mu_window,
+                              M=M_cv, methods=("A", "B"), seed=None)
     # ---- 2) M_final resamples, loss par etape --------------------------
     # on commence a t=1 (a t=0 : un seul terme, identique pour tous)
     t_values = np.arange(1, N_task)
@@ -180,19 +175,19 @@ def run_loss_vs_t(N, N_task, rho, lam,
 
         for t in range(1, N_task):
             S.compute_naive(t)
-            S.muA = mu_opt["A"]
+            S.muA = mu_opt["A"][t]
             S.compute_methodA(t)
-            S.muB = mu_opt["B"]
+            S.muB = mu_opt["B"][t]
             S.compute_methodB(t)
 
             for m in ("naive", "A", "B"):
                 raw[m][r, t - 1] = S.Loss_eval_2(m, time=t)
 
     curves = {}
-    for m in ("A", "B"):
+    for m in ("naive","A", "B"):
         curves[m] = {
             "mean": raw[m].mean(axis=0)-raw["naive"].mean(axis=0),
-            "sem":  (raw[m]-raw["naive"]).std(axis=0) / np.sqrt(M_final),
+            "sem": (raw[m]-raw["naive"]).std(axis=0) / np.sqrt(M_final),
         }
 
     return t_values, curves, mu_opt
@@ -201,8 +196,8 @@ def run_loss_vs_t(N, N_task, rho, lam,
 def plot_loss_vs_t(t_values, curves, N, N_task, rho, lam, fname=None,
                     figsize=(7, 5), dpi=150):
     style = {
-        # "naive": dict(color="seagreen", marker="^", linestyle="--",
-        #               label="Naive"),
+        "naive": dict(color="seagreen", marker="^", linestyle="--",
+                       label="Naive"),
         "A": dict(color="steelblue", marker="o", linestyle="-",
                   label="Method A "),
         "B": dict(color="tomato", marker="s", linestyle="-",
@@ -210,7 +205,7 @@ def plot_loss_vs_t(t_values, curves, N, N_task, rho, lam, fname=None,
     }
 
     fig, ax = plt.subplots(figsize=figsize)
-    for m in ("A", "B"):
+    for m in ("naive","A", "B"):
         ax.errorbar(t_values, curves[m]["mean"], yerr=curves[m]["sem"],
                     capsize=3, linewidth=1.8, markersize=6, **style[m])
 
@@ -234,11 +229,11 @@ def plot_loss_vs_t(t_values, curves, N, N_task, rho, lam, fname=None,
 
 
 if __name__ == "__main__":
-    N = 100
+    
+    N =1000
+    rho = 0.2
     N_task = 8
-    rho = 0.1
-    lam = 2
-
+    lam = np.random.uniform(2, 6, N_task)
     # --- overlap cumulatif ---
     
 

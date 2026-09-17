@@ -174,11 +174,14 @@ class TwoSpikes:
         self.rho = rho
         self.alpha = alpha
         self.mu = mu
+        self.a = alpha * lam1
+        self.b = np.sqrt(1 - alpha ** 2) * lam2
 
         self.Y1, self.Y2, self.x1, self.x2 = self.two_correlated_spikes()
 
         self.theta = {"1": None, "naive": None, "A": None, "B": None}
 
+        self.P = self.alpha *self.lam1 * np.outer(self.x1, self.x1) + np.sqrt(1 - self.alpha ** 2) *self.lam2 * np.outer(self.x2, self.x2)
         # used only by the "naive" baseline estimator
         self.naive_matrix = (
             self.alpha * self.Y1 + np.sqrt(1 - self.alpha ** 2) * self.Y2
@@ -208,9 +211,50 @@ class TwoSpikes:
     def get_x1(self):
         return self.x1
 
+    def get_x2(self):
+            return self.x2
+
     def set_mu(self, mu):
         self.mu = mu
         return self.mu
+
+    def get_P(self):
+        return self.P
+
+    #### Theory formulas
+    def theory_eig(self):
+        """Compute the theoretical eigenvalues of the matrix P."""
+        lam1 = (self.a+self.b)/2 + np.sqrt((self.a-self.b)**2/4 + self.a*self.b*self.rho**2)
+        lam2 = (self.a+self.b)/2 - np.sqrt((self.a-self.b)**2/4 + self.a*self.b*self.rho**2)
+
+        return lam1, lam2
+
+    def theory_vp(self):
+   
+        a = self.a 
+        b = self.b
+
+        lam1, lam2 = self.theory_eig()
+
+        beta1 = (lam1-a)/(a*self.rho)
+        v1 = self.x1 + beta1 * self.x2
+        v1 /= np.linalg.norm(v1)
+
+        beta2 = (lam2-a)/(a*self.rho)
+        v2 = self.x1 + beta2 * self.x2
+        v2 /= np.linalg.norm(v2)
+
+        return v1, v2
+
+    #### theory analysis
+    def eigen_P(self):  # déja trié décroissant : plus grand eigenval[0] et vect : eigenvect[:, 0]
+        eigenvalues, eigenvectors =  np.linalg.eigh(self.P)
+
+        idx = np.argsort(eigenvalues)[::-1]
+        eigenvalues = eigenvalues[idx]
+        eigenvectors = eigenvectors[:, idx]
+
+        return eigenvalues, eigenvectors
 
     @staticmethod
     def power_iteration(M, iterations=50, tol=1e-7):

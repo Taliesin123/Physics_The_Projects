@@ -1,6 +1,4 @@
-Pour fin de semaine 8:
-
-- Finir les premiers plots propres. Tali
-- Faire phase transition avec color map. Tali
-- Rédiger la nouvelle partie théorique du rapport (début, hessienne, méthode spectrale sur Y). Celia
-- Rédiger rapport (matrice de fisher, loss avec les 2 spikes, partie fisher). Tali
+To Do: 
+- Rédiger dans rapport solutions analytiques vectp et valp de P
+- Dossier : Results, cluster ! A GARDER: plot_loss_vs_t, plot overlap_vs_t et autre si nécessaire; Data, Spike_code, spike_fisher (genre toous quoi) 
+- Comparer methodes pour N taches avec lambda differents (voir spike_lib_Ntasks.py), overlap_comp )
