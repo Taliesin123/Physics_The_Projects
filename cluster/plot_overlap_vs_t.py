@@ -20,7 +20,7 @@ Depend de spike_lib_N.py (doit etre dans le meme dossier) :
     from spike_lib_N import TwoSpikes, cv_mu_chain
 
 Usage:
-    python plot_overlap_vs_t.py
+    python cluster/plot_overlap_vs_t.py
 """
 
 import numpy as np
@@ -113,7 +113,7 @@ def plot_overlap_vs_t(t_values, curves, N, N_task, rho, lam, fname=None,
     ax.set_xlabel(r"$t$", fontsize=12)
     ax.set_ylabel(r"$m_t$", fontsize=12)
     ax.set_xlim(t_values[0], t_values[-1])
-    ax.set_ylim(0, 1.05)
+    ax.set_xlim(0, 1)
     ax.grid(alpha=0.3)
     ax.legend(fontsize=10)
     fig.suptitle(
@@ -129,10 +129,12 @@ def plot_overlap_vs_t(t_values, curves, N, N_task, rho, lam, fname=None,
 
 
 if __name__ == "__main__":
-    N =100
+    N =1000
+    rho = 0.1
     N_task = 8
-    rho = 0.8
-    lam = 1.1
+    lam = np.random.uniform(1, 6, N_task)
+    
+    
 
 
     t_values, curves, mu_opt = run_overlap_vs_t(
