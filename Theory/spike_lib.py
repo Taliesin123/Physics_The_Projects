@@ -226,7 +226,7 @@ class TwoSpikes:
         """Compute the theoretical eigenvalues of the matrix P."""
         lam1 = (self.a+self.b)/2 + np.sqrt((self.a-self.b)**2/4 + self.a*self.b*self.rho**2)
         lam2 = (self.a+self.b)/2 - np.sqrt((self.a-self.b)**2/4 + self.a*self.b*self.rho**2)
-
+        # lam = (a+b)/2 +- sqrt((a-b)^2 /4 + ab rho^2)
         return lam1, lam2
 
     def theory_vp(self):
