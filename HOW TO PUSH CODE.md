@@ -21,3 +21,9 @@ Once you pushed to your branch, if you want to bring the changes FROM your branc
     git commit -m "describe what you changed"
     git push
 
+# Notes:
+Doing
+    
+    git checkout la-branche-de-tali 
+
+moves you onto la-branche-de-tali. that's now your "current" branch, and if you edit and commit files, those commits are added there.
