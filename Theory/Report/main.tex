@@ -1,0 +1,369 @@
+\documentclass[11pt]{article}
+
+\input{macro.tex}
+
+\title{\bf Continual Learning for TP4}
+\author{Celia Budelot, Taliesin Perez}
+\date{September 2026, IdePHICS Lab, EPFL}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+\subsection{Motivation}
+\subsection{Summary of the project - goal}
+
+\section{Theory and convention used}
+\begin{defn} \label{def:spiked-wigner}
+Let $\lambda \in \mathbb{R}$ and let $\vect x \in \mathbb{R}^n$ be a signal vector satisfying \( \|\vect x\|^2 = 1\). Let $\rdmmat Z$ be a symmetric Gaussian Wigner matrix, that is,
+\begin{align}
+Z_{ij} = Z_{ji}, \qquad Z_{ij} \overset{\mathrm{i.i.d.}}{\sim} \mathcal N(0,\frac{1}{n})    \quad \text{for } 1\le i<j\le n,
+\end{align}
+and
+\begin{align}
+Z_{ii} \overset{\mathrm{i.i.d.}}{\sim} \mathcal N(0,\frac{1}{n}) \quad \text{for } 1\le i\le n.
+\end{align}
+\noindent
+We define the spiked model as
+\begin{equation}
+    \rdmmat Y = \lambda \,\vect x \vect x^T + \rdmmat Z,
+    \label{norm2}
+\end{equation}
+\end{defn}
+For two corrolated spikes, we define:
+\begin{defn}[Multi-Task Spiked Wigner Model]\leavevmode\\
+    Let $\lambda_1, \lambda_2 \in \R$ the signal-to-noise ratio per task and $\vect x_1, \vect x_2 \in \R^n$, with $\norm{\vect x_1} = \norm{\vect x_2} = 1$ the correlated signals per task from a multivariate Gaussian Prior:
+    \begin{align}
+        \forall i \in[n]\,,\; \para{x_{1,i}\;\; x_{2,i}}^T \overset{\mathrm{i.i.d.}}{\sim} \mathcal{N}(\vect 0, \mat C)\, ,\quad\mathrm{with}\quad \mat C := \begin{pmatrix}
+            1 & \rho \\
+            \rho & 1 
+        \end{pmatrix}\,,\quad \mathrm{and}\quad \rho \in [0,1]\,.
+    \end{align} 
+    We define independent  Gaussian noises $\rdmmat Z_1$ and $\rdmmat Z_2$, namely:
+    \begin{align}
+        \forall (t,i,j) \in\{1,2\}\times[n]^2 \,, \; Z_{t,ij} = Z_{t,ji} \overset{\mathrm{i.i.d.}}{\sim} \mathcal{N}\bigg(0,\frac{1}{n}\bigg) .
+    \end{align}
+    We write the multi-spiked model as:
+    \begin{align}
+        \rdmmat Y_1 \, = \, \lambda_1 \vect x_1 \vect x_1^T + \rdmmat Z_1 \, , \\
+        \rdmmat Y_2 \, = \, \lambda_2 \vect x_2 \vect x_2^T + \rdmmat Z_2 \, .
+    \end{align}
+    \noindent
+    Our observation is then:
+    \begin{equation}
+    \rdmmat Y := \alpha \rdmmat Y_1 + \sqrt{1-\alpha^2} \cdot \rdmmat Y_2
+    \label{eq:2spikes}
+    \end{equation}
+    \noindent
+    with $ \alpha$ the importance factor, giving how important the task $i = 1,2$ is.
+\end{defn}
+
+\subsection{ BBP transition and Spectral method} 
+
+The goal is to recover the hidden vector $\vect x$ from the observation $\rdmmat Y$. The possibility of recovering the signal is governed by the signal-to-noise ratio parameter $\lambda$. When $\lambda$ is sufficiently large, an eigenvalue corresponding to the signal separates from the bulk of the spectrum. This phenomenon is known as the \emph{BBP phase transition} and indicates that the signal becomes detectable through spectral methods.
+\noindent
+Before describing this transition, it is important to recall that the global distribution of the eigenvalues of a Wigner matrix admits a deterministic limit.
+
+\begin{theo}[Semicircle Law]\label{thm:semi-circle}
+Let $\lambda_1(Y),\dots,\lambda_n(Y)$ denote the eigenvalues of $\rdmmat Y$. The empirical spectral distribution
+\begin{align}
+\hat{\mu}_Y := \frac{1}{n}\sum_{i=1}^n \delta_{\lambda_i(Y)}
+\end{align}
+converges weakly almost surely as $n \to \infty$ to the semi-circle distribution with density
+\begin{align}
+    \rho_{sc}(x) := \frac{1}{2\pi}\sqrt{4-x^2}\,\mathbf{1}_{|x|\le 2}.
+\end{align}
+\end{theo}
+
+
+\noindent
+Furthermore, spectral analysis does not only yield eigenvalues distribution, or equivalently, it does not only give a certification about whether one can recover a signal or not. 
+\noindent
+While one can obtain the threshold by computing the top eigenvalue of $\rdmmat Y$, the top eigenvector associated corresponds to an estimator $\hat {\vect x}$ of $\vect x$. 
+\noindent
+To know if this is a good estimation, We define the overlap: 
+\begin{equation}
+    m_n = \lvert \langle \hat{\vect x} 
+     , \vect x\rangle \rvert = \rvert\sum_{i=1}^n \hat{x}_i x_i \rvert \, .
+    \label{eq:overlap_u}
+\end{equation}
+\noindent
+One can think about the overlap as the alignment between the estimator and the signal. If the estimator is good, they should be aligned and the overlap should go to $1$. Otherwise, if the estimator is randomly chosen, it is most likely orthogonal to the signal in high dimension and the overlap should go to $0$.
+\medskip 
+
+\begin{theo}[BBP transition]\label{thm:bbp}
+Let $\hat{\vect x}$ be the top eigenvector of $\rdmmat Y$ associated to the eigenvalue $\lambda_{\max}$. Additionally, $\hat{\vect x}$ is normalised so that $\|\hat{\vect x}\| = 1$, consistently with $\|\vect x\| = 1$. Then, as $n\to\infty$, the largest eigenvalue satisfies
+\begin{align}
+\lambda_{\max}(Y)\xrightarrow{\mathrm{a.s.}}
+\begin{cases}
+2 & \text{if } \lambda \le 1,\\[0.3em]
+\lambda+\lambda^{-1} & \text{if } \lambda > 1,
+\end{cases}
+\end{align}
+and the overlap \eqref{eq:overlap_u} between $\hat{\vect x}$ and the spike direction $\vect x$ satisfies
+\begin{align}
+    m_n
+    %
+    \xrightarrow{\mathrm{a.s.}}
+    %
+    m := \begin{cases}
+        0 & \text{if } \lambda \le 1,\\[0.3em]
+        \sqrt{1-\lambda^{-2}} & \text{if } \lambda > 1.
+    \end{cases}
+\end{align}
+In particular, weak recovery by PCA is possible if and only if \(\lambda>1\).
+\end{theo}
+
+\section{First Observations}
+
+\subsection{Eigenvalues of the signal matrix}
+
+\paragraph{Reduction to a spiked Wigner model (splitting the observation into noiseless $+$ noise):}
+We study what the behaviour of a two correlated spike should theoretically be, and compare that to simulations.\\
+The observable splits into a noise part and a low rank signal part:
+\begin{equation}
+    \rdmmat Y = \underbrace{a\,\vect{x_1}\vect{x_1}^T + b\,\vect{x_2}\vect{x_2}^T}_{=:\ \rdmmat P}
+              + \underbrace{\alpha \rdmmat Z_1 + \sqrt{1-\alpha^2}\,\rdmmat Z_2}_{=:\ \rdmmat W}
+    \qquad
+    a := \alpha\lambda_1, \quad b := \sqrt{1-\alpha^2}\,\lambda_2
+    \label{eq:Y-split}
+\end{equation}
+Since $\rdmmat Z_1$ and $\rdmmat Z_2$ are independent with entries of variance $1/n$, the entries of $\rdmmat W$ are Gaussian with variance $(\alpha^2 + 1 - \alpha^2)/n = 1/n$: the noise $\rdmmat W$ is again a Wigner matrix. So \eqref{eq:Y-split} is a rank-two spiked Wigner model whose spike matrix $\rdmmat P$ carries all the dependence on $\alpha$, $\lambda_1$, $\lambda_2$ and $\rho$. We can then compute its spectrum in closed form.
+
+\medskip
+\noindent
+\textbf{Which matrix are we working with?} The whole section alternates between two different matrices, and it is worth fixing the vocabulary once and for all:
+\begin{itemize}[topsep=2pt,itemsep=1pt]
+    \item the \emph{noiseless} (or signal) matrix $\rdmmat P$, of rank at most two. It is not observable --- it is the object we can diagonalise exactly, in closed form, because it contains no randomness beyond the signals themselves;
+    \item the \emph{noisy} (or observed) matrix $\rdmmat Y = \rdmmat P + \rdmmat W$. This is what we actually measure, and its spectrum can only be described asymptotically, through random matrix theory.
+\end{itemize}
+The strategy is: solve $\rdmmat P$ exactly (Sections up to \eqref{eq:overlaps-signals}), then feed that solution into the BBP theory to get $\rdmmat Y$ (from \eqref{eq:bbp} on). To keep the two apart, we reserve a distinct set of symbols for each:
+\begin{center}
+\begin{tabular}{l|l|l}
+ & \textbf{noiseless} $\rdmmat P$ & \textbf{noisy} $\rdmmat Y = \rdmmat P + \rdmmat W$ \\
+\hline
+eigenvalues     & $\theta_\pm$ (exact, \eqref{eq:theta-pm})        & $\lambda^{\mathrm{out}}_\pm$ (asymptotic, \eqref{eq:bbp}) \\
+eigenvectors    & $\hat{\vect v}_\pm$ (exact, \eqref{eq:v-final})  & $\hat{\vect u}_\pm$ (asymptotic, \eqref{eq:bbp-vec}) \\
+top eigenvector & ---                                              & $\hat{\vect x} := \hat{\vect u}_+$, the estimator of the signals \\
+overlaps        & $\langle \hat{\vect v}_\pm, \vect{x_i}\rangle$, \eqref{eq:overlaps-signals} & $m_i = |\langle \hat{\vect x}, \vect{x_i}\rangle|$, \eqref{eq:m12} \\
+\end{tabular}
+\end{center}
+\noindent
+Note finally that $\lambda_1, \lambda_2$ always denote the signal-to-noise ratios of the two tasks, never eigenvalues; eigenvalues of $\rdmmat P$ are written $\theta$.
+
+\paragraph{Factorised form (noiseless $\rdmmat P$):}
+Since $\rdmmat P$ is built from two rank 1 signals, it has a rank of at most two and its spectrum is determined by the plane $\operatorname{span}(\vect{x_1},\vect{x_2})$. We write
+\begin{equation}
+    \rdmmat P = \rdmmat X \rdmmat K \rdmmat X^T
+    \qquad
+    \rdmmat X := \big( \vect{x_1} \ \ \vect{x_2} \big) \in \mathbb{R}^{n\times 2}
+    \qquad
+    \rdmmat K := \begin{pmatrix} a & 0 \\ 0 & b \end{pmatrix}
+    \label{eq:P-factor}
+\end{equation}
+And using that:
+\begin{equation}
+    \det(\rdmmat{AB} + \rdmmat I) = \det(\rdmmat{BA} + \rdmmat I) 
+\end{equation}
+and applying is using that $\rdmmat A = \rdmmat X$ and $\rdmmat B = \rdmmat K\rdmmat X^T$, we have that:
+\begin{equation}
+    \det(\rdmmat P - \theta\, \rdmmat I_n) = (-\theta)^n \det\big(\rdmmat I_n - \rdmmat{AB}/\theta\big)
+    = (-\theta)^n \det\big(\rdmmat I_2 - \rdmmat{BA}/\theta\big) ,
+\end{equation}
+so that, for $\theta \neq 0$, $\theta$ is an eigenvalue of the noiseless $\rdmmat P$ if and only if $\det(\rdmmat I_2 - \rdmmat{BA}/\theta) = 0$.
+and as $\rdmmat{BA} = \rdmmat{KX^TX} $ so the non-zero eigenvalues of $\rdmmat P$ are exactly the eigenvalues of the $2\times 2$ matrix
+\begin{equation}
+    \rdmmat K \rdmmat G,
+    \qquad
+    \rdmmat G := \rdmmat X^T \rdmmat X
+    = \begin{pmatrix} \|\vect{x_1}\|^2 & \langle \vect{x_1},\vect{x_2}\rangle \\ \langle \vect{x_1},\vect{x_2}\rangle & \|\vect{x_2}\|^2 \end{pmatrix}
+    = \begin{pmatrix} 1 & \hat\rho \\ \hat\rho & 1 \end{pmatrix},
+    \qquad
+    \hat\rho := \langle \vect{x_1},\vect{x_2}\rangle
+    \label{eq:gram}
+\end{equation}
+where $\rdmmat G$ is defined as shown above and we used $\|\vect{x_1}\| = \|\vect{x_2}\| = 1$. The remaining $n-2$ eigenvalues of $\rdmmat P$ are zero.
+
+\paragraph{Empirical vs theoretical overlap (signals only, no matrix involved):}
+As the spikes are correlated, the pairs $(x_{1,i},x_{2,i})$ are i.i.d.\ with $\mathbb{E}[x_{1,i}x_{2,i}] = \rho$, so by the law of large numbers the empirical overlap concentrates around the correlation $\rho$:
+\begin{equation}
+    \hat\rho = \frac{\langle \vect{x_1},\vect{x_2}\rangle}{\|\vect{x_1}\|\,\|\vect{x_2}\|} \xrightarrow[n\to\infty]{\text{a.s.}} \rho
+    \label{eq:overlap}
+\end{equation}
+In the high-dimensional limit, we may therefore replace $\rdmmat G$ by the covariance matrix $\rdmmat C$ defined in \eqref{eq:2spikes}.
+
+\paragraph{The eigenvalues of the noiseless matrix $\rdmmat P$:}
+These are the $\theta$'s, not to be confused with the eigenvalues of the observed $\rdmmat Y$ treated in \eqref{eq:bbp}. From \eqref{eq:gram}, we find that:
+\begin{equation}
+    \det(\rdmmat I_2 - \rdmmat K\rdmmat G/\theta)
+    = \frac{1}{\theta^2}\det(\theta\,\rdmmat I_2 - \rdmmat K\rdmmat G)
+    = \frac{1}{\theta^2}\det\begin{pmatrix} \theta - a & -a\rho \\ -b\rho & \theta - b \end{pmatrix}
+    = 0
+\end{equation}
+can be solved using that:
+\begin{equation}
+    \rdmmat K \rdmmat G = \begin{pmatrix} a & a\rho \\ b\rho & b \end{pmatrix},
+    \qquad
+    \operatorname{tr}(\rdmmat K\rdmmat G) = a + b,
+    \qquad
+    \det(\rdmmat K\rdmmat G) = ab\,(1-\rho^2),
+\end{equation}
+so the characteristic polynomial is $\theta^2 - (a+b)\,\theta + ab(1-\rho^2) = 0$, whose roots are
+\begin{equation}
+    \boxed{\;
+    \theta_\pm = \frac{a+b}{2} \pm \sqrt{\Big(\frac{a-b}{2}\Big)^2 + ab\,\rho^2}
+    \;}
+    \qquad
+    a = \alpha\lambda_1, \quad b = \sqrt{1-\alpha^2}\,\lambda_2
+    \label{eq:theta-pm}
+\end{equation}
+The discriminant is non-negative, so $\theta_\pm \in \mathbb{R}$. These two numbers are exact for every $n$: no noise and no large-$n$ limit has been used so far.\\
+\textcolor{red}{We can then plot the empirical highest eigenvalues $\lambda_1$ and $\lambda_2$ with the theoretical ones $\theta_+$ and $\theta_-$ to compare them (see plots).}\\
+\textcolor{purple}{TRUE FOR $\lambda_1 = \lambda_2=1$: We also note that when solving for $\theta_+ = 1$ and $\theta_- = 1$ we find $\lambda^*_1 = \frac{1}{1 + \rho} \frac{1}{\sqrt{\frac{1}{2}}}$ with the $\sqrt{\frac{1}{2}}$ coming from equally weighted spikes. We also find $\lambda^*_2 = \frac{1}{1 - \rho} \frac{1}{\sqrt{\frac{1}{2}}}$. We therefore note that those value of $\lambda^*_1$ and $\lambda^*_2$ will be the point at which the BBP transition will occur. We also note that in the limit $\rho = 0$, we find that $\lambda_1^*=\lambda^*_2=\sqrt{2}$, what does that mean ?}
+
+\paragraph{The eigenvectors of the noiseless matrix $\rdmmat P$:}
+We now derive the eigenvectors of $\rdmmat P$ in closed form. We assume $a, b > 0$ (i.e.\ $\alpha \in (0,1)$ and $\lambda_1, \lambda_2 > 0$) and $\rho \in [0,1)$, so that $\det(\rdmmat K \rdmmat G) = ab(1-\rho^2) > 0$ and both $\theta_\pm$ are strictly positive. We introduce
+\begin{equation}
+    \Delta := \sqrt{\Big(\frac{a-b}{2}\Big)^2 + ab\,\rho^2},
+    \qquad \text{so that} \qquad
+    \theta_\pm = \frac{a+b}{2} \pm \Delta,
+    \label{eq:Delta}
+\end{equation}
+and we assume $\Delta > 0$, i.e.\ we exclude the degenerate case $a = b$, $\rho = 0$, in which $\theta_+ = \theta_-$ and every vector of $\operatorname{span}(\vect{x_1},\vect{x_2})$ is an eigenvector.
+
+\paragraph{Going to the plane of the signals (méthode de Celia) --- still noiseless $\rdmmat P$:} Let $\vect v$ be a unit eigenvector of $\rdmmat P$ with eigenvalue $\theta \neq 0$. Since
+\begin{equation}
+    \rdmmat P \vect v = a\,\langle \vect{x_1}, \vect v\rangle\,\vect{x_1} + b\,\langle \vect{x_2}, \vect v\rangle\,\vect{x_2} = \theta\,\vect v ,
+\end{equation}
+$\vect v$ must lie in $\operatorname{span}(\vect{x_1},\vect{x_2})$, and we write
+\begin{equation}
+    \vect v = c_1\,\vect{x_1} + c_2\,\vect{x_2},
+    \qquad
+    \langle \vect{x_1}, \vect v\rangle = c_1 + \rho\, c_2,
+    \qquad
+    \langle \vect{x_2}, \vect v\rangle = \rho\, c_1 + c_2 .
+    \label{eq:ansatz}
+\end{equation}
+Substituting into the eigenvalue equation and identifying the coefficients of $\vect{x_1}$ and $\vect{x_2}$ (which are linearly independent since $\rho < 1$) gives
+\begin{equation}
+    \begin{cases}
+        a\,(c_1 + \rho\, c_2) = \theta\, c_1 ,\\[2pt]
+        b\,(\rho\, c_1 + c_2) = \theta\, c_2 ,
+    \end{cases}
+    \qquad \text{i.e.} \qquad
+    (\rdmmat K \rdmmat G - \theta\, \rdmmat I_2)\begin{pmatrix} c_1 \\ c_2 \end{pmatrix} = \vect 0 .
+    \label{eq:eig-system}
+\end{equation}
+A non-trivial solution exists if and only if $\theta \in \{\theta_+, \theta_-\}$, recovering \eqref{eq:theta-pm}. For $\rho > 0$ we have $(\theta_\pm - a)(\theta_\pm - b) = ab\rho^2 > 0$, so $\theta_\pm \neq a$, and the first row yields
+\begin{equation}
+    c_1 = r_\pm\, c_2,
+    \qquad
+    r_\pm := \frac{\rho\, a}{\theta_\pm - a} = \frac{\theta_\pm - b}{b\rho},
+    \label{eq:ratio}
+\end{equation}
+where the two expressions for $r_\pm$ agree precisely because of the characteristic equation. For the same reason, the second row of \eqref{eq:eig-system} is then automatically satisfied.
+
+\paragraph{Normalisation (noiseless $\rdmmat P$):} Using $\norm{\vect{x_1}} = \norm{\vect{x_2}} = 1$ and $\langle \vect{x_1},\vect{x_2}\rangle = \rho$,
+\begin{equation}
+    \norm{\vect v}^2 = c_1^2 + 2\rho\, c_1 c_2 + c_2^2
+    = c_2^2\,\big( r_\pm^2 + 2\rho\, r_\pm + 1 \big) = 1
+    \quad \Longrightarrow \quad
+    c_2 = \pm \big( r_\pm^2 + 2\rho\, r_\pm + 1 \big)^{-1/2} .
+\end{equation}
+The bracket is strictly positive, since $r^2 + 2\rho r + 1 = (r+\rho)^2 + 1 - \rho^2 > 0$.
+
+\paragraph{Final expression for the eigenvectors of the noiseless $\rdmmat P$:} Combining \eqref{eq:ratio} with the normalisation, the unit-norm eigenvectors of $\rdmmat P$ associated with $\theta_\pm$ are, up to an overall sign,
+\begin{equation}
+    \hat{\vect v}_\pm = c_1^\pm\,\vect{x_1} + c_2^\pm\,\vect{x_2},
+    \qquad
+    \big(c_1^\pm,\, c_2^\pm\big) = \frac{\big(r_\pm,\, 1\big)}{\sqrt{r_\pm^2 + 2\rho\, r_\pm + 1}},
+    \qquad
+    r_\pm = \frac{\rho\, a}{\theta_\pm - a} .
+    \label{eq:v-final}
+\end{equation}
+In plain words: $\rdmmat P$ only acts inside the plane spanned by $\vect{x_1}$ and $\vect{x_2}$, so each of its two eigenvectors is simply a \emph{mixture} of the two signals. All the content of \eqref{eq:v-final} is the single number $r_\pm = c_1^\pm/c_2^\pm$, which fixes the weight of the mixture; the square root is only there to impose $\norm{\hat{\vect v}_\pm} = 1$, and it carries the extra term $2\rho\, r_\pm$ precisely because $\vect{x_1}$ and $\vect{x_2}$ are \emph{not} orthogonal. Since $\theta_+ \ge \max(a,b)$ and $\theta_- \le \min(a,b)$, we have $r_+ \ge 0$ and $r_- \le 0$: $\hat{\vect v}_+$ is the constructive combination of the two signals, and $\hat{\vect v}_-$ the destructive one. We insist that $\hat{\vect v}_\pm$ are eigenvectors of the \emph{noiseless} $\rdmmat P$; they are not observable, and they are not yet the estimator of the signals.
+
+\paragraph{The decoupled case $\rho = 0$ (noiseless $\rdmmat P$):} The ratio $r_\pm = \rho a/(\theta_\pm - a)$ becomes the indeterminate form $0/0$ when $\rho = 0$ and $\theta_\pm = a$, so at $\rho = 0$ it has to be read as a limit. It is cleaner to go back to \eqref{eq:eig-system}, which for $\rho = 0$ decouples into $a c_1 = \theta c_1$ and $b c_2 = \theta c_2$: then $\{\theta_+,\theta_-\} = \{a,b\}$ and the eigenvectors are $\vect{x_1}$ and $\vect{x_2}$ themselves, i.e.\ the two tasks separate completely. Numerically, the safe way to obtain $(c_1^\pm, c_2^\pm)$ for \emph{any} $\rho$ is to diagonalise the $2\times2$ matrix $\rdmmat K \rdmmat G$ directly instead of evaluating $r_\pm$.
+
+\paragraph{Overlaps of the noiseless eigenvectors with the signals:} The overlaps of $\hat{\vect v}_\pm$ with the signals follow directly from \eqref{eq:ansatz} and \eqref{eq:eig-system}, since $c_1 + \rho c_2 = \theta c_1/a$ and $\rho c_1 + c_2 = \theta c_2/b$:
+\begin{equation}
+    \langle \hat{\vect v}_\pm, \vect{x_1}\rangle = \frac{\theta_\pm}{a}\, c_1^\pm,
+    \qquad
+    \langle \hat{\vect v}_\pm, \vect{x_2}\rangle = \frac{\theta_\pm}{b}\, c_2^\pm .
+    \label{eq:overlaps-signals}
+\end{equation}
+The point of \eqref{eq:overlaps-signals} is that the \emph{coefficients} $c_i^\pm$ (how much of each signal we put into the mixture) are not the same thing as the \emph{overlaps} $\langle \hat{\vect v}_\pm, \vect{x_i}\rangle$ (how much of each signal we actually see), again because $\vect{x_1}$ and $\vect{x_2}$ are not orthogonal; the factors $\theta_\pm/a$ and $\theta_\pm/b$ convert one into the other. Equation \eqref{eq:overlaps-signals} is the last exact, noiseless result of this section: everything that follows concerns the observed matrix $\rdmmat Y$ and holds only asymptotically.
+
+\medskip
+\noindent
+Equation \eqref{eq:overlaps-signals} also gives a useful identity. Multiplying its first relation by $a\,\langle \hat{\vect v}_\pm, \vect{x_1}\rangle$, its second by $b\,\langle \hat{\vect v}_\pm, \vect{x_2}\rangle$, adding, and using the normalisation $c_1^2 + 2\rho c_1 c_2 + c_2^2 = 1$, we get
+\[
+    \theta_\pm \;=\; \hat{\vect v}_\pm^{\,T}\, \rdmmat P\, \hat{\vect v}_\pm
+    \;=\; a\,\langle \hat{\vect v}_\pm, \vect{x_1}\rangle^2 + b\,\langle \hat{\vect v}_\pm, \vect{x_2}\rangle^2 .
+\]
+In other words, $\theta_\pm$ is exactly the signal-to-noise ratio of each task weighted by how well the direction $\hat{\vect v}_\pm$ captures that task. This is what makes $\theta_\pm$ an \emph{effective SNR}, and it is the bridge between the noiseless geometry \eqref{eq:overlaps-signals} and the noisy spectrum \eqref{eq:bbp} below: $\theta_\pm$ is computed entirely from $\rdmmat P$, but it is the only feature of $\rdmmat P$ that the spectrum of $\rdmmat Y$ remembers.
+
+\medskip
+\noindent
+Still on the noiseless side: since $\rdmmat P$ is symmetric and $\theta_+ \neq \theta_-$, the two eigenvectors $\hat{\vect v}_\pm$ are orthogonal. The remaining $n-2$ eigenvectors span $\operatorname{span}(\vect{x_1},\vect{x_2})^\perp$ and have eigenvalue $0$. For a finite $n$, all the expressions above hold exactly with $\rho$ replaced by the empirical overlap $\hat\rho$; by \eqref{eq:overlap}, the expressions written with $\rho$ are their $n \to \infty$ limits.
+
+\paragraph{Switching on the noise: the outliers of the noisy matrix $\rdmmat Y$.}
+We now leave the noiseless matrix and turn to the observed one. Because $\rdmmat W$ is a Wigner matrix (rotationally invariant Gaussian noise), the outlier eigenvalues of $\rdmmat Y = \rdmmat W + \rdmmat P$ depend on the finite-rank perturbation $\rdmmat P$ only through its non-zero eigenvalues $\theta_\pm$ \cite{benaychgeorges2011eigenvalues, capitaine2009largest}. The Baik--Ben Arous--P\'ech\'e (BBP) transition \cite{baik2005phase, feral2007largest} then applies to each $\theta_\pm$ separately: with the normalisation of Definition~\ref{def:spiked-wigner}, the semicircle bulk has edge $2$ and
+\begin{equation}
+    \lambda_\pm^{\mathrm{out}} \xrightarrow[n\to\infty]{\text{a.s.}}
+    \begin{cases}
+        \theta_\pm + \dfrac{1}{\theta_\pm}, & \theta_\pm > 1, \\[6pt]
+        2, & \theta_\pm \le 1 .
+    \end{cases}
+    \label{eq:bbp}
+\end{equation}
+The practical reading of \eqref{eq:bbp} is that, as far as the spectrum of $\rdmmat Y$ is concerned, the two correlated tasks behave like two \emph{independent} rank-one spiked Wigner models with SNRs $\theta_+$ and $\theta_-$: Theorem~\ref{thm:bbp} applies verbatim with $\lambda$ replaced by $\theta_\pm$. The correlation therefore acts in both directions: it can push $\theta_+$ above the detection threshold even when $a$ and $b$ are individually sub-critical, while pushing $\theta_-$ deeper into the bulk. In the $(a,b)$ plane the detection boundary $\theta_+ = 1$ is obtained by setting $\theta = 1$ in the characteristic polynomial of $\rdmmat K\rdmmat G$, which gives the curve
+\begin{equation}
+    1 - (a+b) + ab\,(1-\rho^2) = 0 ,
+    \qquad \text{with } a + b \le 2,
+    \label{eq:boundary}
+\end{equation}
+the condition $a + b \le 2$ selecting the branch on which the root equal to $1$ is the \emph{larger} one (the two roots sum to $a+b$, so the other root is $a+b-1$). The branch $a+b \ge 2$ of the same curve is $\theta_- = 1$, where the second outlier appears. For $\rho = 0$ the curve \eqref{eq:boundary} factorises as $(1-a)(1-b) = 0$ and reduces to the two BBP half-lines $a = 1,\, b \le 1$ and $b = 1,\, a \le 1$; for $\rho = 1$ it reduces to the line $a + b = 1$.
+
+\paragraph{The eigenvectors of the noisy matrix $\rdmmat Y$.}
+The same theory \cite{benaychgeorges2011eigenvalues} describes the eigenvectors of the noisy matrix. Let $\hat{\vect u}_\pm$ denote the unit eigenvector of $\rdmmat Y$ associated with $\lambda_\pm^{\mathrm{out}}$; it is the noisy counterpart of the noiseless $\hat{\vect v}_\pm$, and \eqref{eq:bbp-vec} below says how close the two are. When $\theta_\pm > 1$ (and $\theta_+ \neq \theta_-$),
+\begin{equation}
+    |\langle \hat{\vect u}_\pm, \hat{\vect v}_\pm \rangle|^2 \xrightarrow[n\to\infty]{\text{a.s.}} 1 - \frac{1}{\theta_\pm^{2}},
+    \qquad
+    \langle \hat{\vect u}_\pm, \hat{\vect v}_\mp \rangle \xrightarrow[n\to\infty]{\text{a.s.}} 0 ,
+    \label{eq:bbp-vec}
+\end{equation}
+while for $\theta_\pm \le 1$ the overlap with $\hat{\vect v}_\pm$ vanishes; this is again Theorem~\ref{thm:bbp} with $\lambda$ replaced by $\theta_\pm$.
+
+\medskip
+\noindent
+Combining the noiseless geometry with the noisy damping is now straightforward. The noiseless eigenvectors $\hat{\vect v}_+$ and $\hat{\vect v}_-$ form an orthonormal basis of $\operatorname{span}(\vect{x_1},\vect{x_2})$, so each signal decomposes as
+\[
+    \vect{x_i} = \langle \vect{x_i}, \hat{\vect v}_+\rangle \hat{\vect v}_+ + \langle \vect{x_i}, \hat{\vect v}_-\rangle \hat{\vect v}_- .
+\]
+Taking the scalar product with the top eigenvector $\hat{\vect x} := \hat{\vect u}_+$ of the \emph{noisy} matrix $\rdmmat Y$,
+\[
+    \langle \hat{\vect x}, \vect{x_i}\rangle
+    = \underbrace{\langle \hat{\vect u}_+, \hat{\vect v}_+\rangle}_{\to\ \sqrt{1-\theta_+^{-2}}\ \text{by }\eqref{eq:bbp-vec}}
+      \langle \hat{\vect v}_+, \vect{x_i}\rangle
+    + \underbrace{\langle \hat{\vect u}_+, \hat{\vect v}_-\rangle}_{\to\ 0\ \text{by }\eqref{eq:bbp-vec}}
+      \langle \hat{\vect v}_-, \vect{x_i}\rangle ,
+\]
+where the component of $\hat{\vect x}$ orthogonal to the plane contributes nothing because $\vect{x_i}$ lies in the plane. With \eqref{eq:overlaps-signals} this gives
+\begin{equation}
+    m_1 := |\langle \hat{\vect x}, \vect{x_1}\rangle| \xrightarrow[n\to\infty]{\text{a.s.}} \sqrt{1-\theta_+^{-2}}\;\frac{\theta_+}{a}\,\lvert c_1^+ \rvert ,
+    \qquad
+    m_2 := |\langle \hat{\vect x}, \vect{x_2}\rangle| \xrightarrow[n\to\infty]{\text{a.s.}} \sqrt{1-\theta_+^{-2}}\;\frac{\theta_+}{b}\,\lvert c_2^+ \rvert ,
+    \label{eq:m12}
+\end{equation}
+for $\theta_+ > 1$, and $m_1, m_2 \to 0$ for $\theta_+ \le 1$. The structure of \eqref{eq:m12} is worth emphasising: it is a product of two independent effects. The factor $\sqrt{1-\theta_+^{-2}}$ is the \emph{noise damping} --- how much of the direction $\hat{\vect v}_+$ survives the Wigner noise, and it is the same for both tasks. The factors $(\theta_+/a)|c_1^+|$ and $(\theta_+/b)|c_2^+|$ are the \emph{pure geometry} of the noiseless signal matrix, and they say how the single recovered direction is shared between $\vect{x_1}$ and $\vect{x_2}$, through the ratio $r_+ = c_1^+/c_2^+$.
+
+\medskip
+\noindent
+Detection by the top eigenvector is therefore possible if and only if $\theta_+ > 1$, i.e.\ above the curve \eqref{eq:boundary}. One caveat: above that curve $m_2 > 0$ always (since $c_2^+ \neq 0$), whereas $m_1 > 0$ requires $r_+ \neq 0$, i.e.\ $\rho > 0$. In the decoupled case $\rho = 0$ the top eigenvector aligns with the stronger signal only ($\vect{x_1}$ if $a > b$, $\vect{x_2}$ if $a < b$) and carries no information at all about the other one; recovering the weaker signal then requires the \emph{second} eigenvector, i.e.\ $\theta_- > 1$.
+
+\paragraph{Numerical check.} Equations \eqref{eq:v-final}--\eqref{eq:m12} are checked against simulations in \texttt{Theory/check\_bulk.py}, which uses exactly the same conventions ($a = \alpha\lambda_1$, $b = \sqrt{1-\alpha^2}\lambda_2$, unit-norm signals, semicircle edge at $2$) and obtains $(c_1^+,c_2^+)$ by diagonalising $\rdmmat K\rdmmat G$ rather than through $r_+$. Its simulations always build the \emph{noisy} $\rdmmat Y$ (\texttt{naive\_matrix} $= \alpha \rdmmat Y_1 + \sqrt{1-\alpha^2}\rdmmat Y_2$) and compare it to the theory curves; the noiseless $\hat{\vect v}_\pm$ enter only as the reference directions of \texttt{overlaps\_vs\_lambda.png}.
+
+\end{document}

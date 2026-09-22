@@ -1,0 +1,491 @@
+%__________________________________
+%————|Pacakages|———————————————————
+%----------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{bm}
+\newcommand{\vect}[1]{\bm{#1}}
+\usepackage{amsmath}
+\usepackage[hmargin=2cm,vmargin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{amssymb}
+% enumitem is loaded below with [shortlabels] -- loading it here without
+% options first would raise "Option clash for package enumitem".
+\usepackage{authblk}
+\newtheorem{property}{Property}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{float}
+\geometry{margin=1.5cm}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{mathrsfs,bm,color}
+\usepackage{fancyhdr,lastpage}
+\usepackage[shortlabels]{enumitem}
+\usepackage{calc}
+\usepackage{bbm}
+\usepackage{graphicx}
+\usepackage{upgreek}
+\usepackage{lmodern}
+\usepackage[normalem]{ulem}
+\usepackage{verbatim}
+\usepackage{bbm}
+%\usepackage{ntheorem}
+\usepackage{stmaryrd}
+\usepackage{amsmath}
+% \usepackage{amstex}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{amsthm}
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks,
+	linkcolor={red!50!black},
+	citecolor={red!80!black},
+	urlcolor={blue!80!black}
+}
+\usepackage[numbers]{natbib}
+\usepackage{xcolor}
+
+\usepackage{graphicx}
+
+\usepackage{amsfonts}%
+\usepackage{dsfont}
+
+%--------------------------------
+\def\ra{{\rightarrow}}
+\newcommand{\Var}{\operatorname{Var}}
+
+
+\parindent=1em
+\allowdisplaybreaks
+% geometry is loaded once at the top of this file (with these same options);
+% \geometry{margin=1.5cm} above is what actually sets the margins.
+
+
+%--Enumerate----
+
+
+%___________________________________
+%—|Eqs,Theorems,Lemma,Proofs, etc|——
+%-----------------------------------
+
+\numberwithin{equation}{section}
+
+\usepackage{thmtools}
+\declaretheorem[thmbox=M,name=Theorem,numberwithin=section]{theo}
+\declaretheorem[name=Proposition,thmbox=M,numberwithin=section]{prop}
+\declaretheorem[name=Lemma,thmbox=S,numberwithin=section]{lem}
+%\declaretheorem[name=Definition,thmbox=M,numberlike=theorem]{defn}
+\declaretheorem[name=Corollary,thmbox=M,numberwithin=section]{cor}
+\declaretheorem[name=Conjecture,thmbox=M,numberwithin=section]{con}
+\declaretheorem[name=Hypothesis,thmbox=S,numberwithin=section]{hyp}
+\theoremstyle{definition}
+\newtheorem{exam}{Example}[section]
+\newtheorem{defn}{Definition}[section]
+\newtheorem{rem}{Remark}[section]
+\newtheorem{exo}{Exercise}[section]
+\newtheorem{ass}{Assumption}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{plain}
+
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{\par
+	\pushQED{\qed}%
+	\normalfont \topsep6\p@\@plus6\p@\relax
+	\trivlist
+	\item[\hskip\labelsep
+	\sffamily\bfseries
+	#1\@addpunct{.}]\ignorespaces
+}{%
+	\popQED\endtrivlist\@endpefalse
+}
+\makeatother
+
+
+%__________________________________
+%————|Commands/defs|———————————————
+%----------------------------------
+
+%--font--------------------
+\newcommand{\jump}{{\vskip 0.3cm \noindent }}
+
+
+%--english math mode-------
+\newcommand{\for}{\mbox{ for }}
+\newcommand{\with}{\mbox{ with }}
+\renewcommand{\and}{\mbox{ and }}
+
+%--usual functions---------
+\newcommand{\e}{\mathrm{e}}
+
+%--Field/usual sets--------
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\renewcommand{\H}{\mathbb{H}}
+
+\newcommand{\D}{\mathbb{D}}
+\newcommand{\T}{\mathbb{T}}
+\newcommand{\B}{\mathbb{B}}
+\renewcommand{\S}{\mathbb{S}}
+\newcommand{\Sn}{\mathbb{S}^{N-1}}
+
+%--Analysis----------------
+\newcommand{\dd}{\mathrm d}
+\newcommand{\I}{\mathbb{I}}
+%\newcommand{\Ind}[1]{\ensuremath{ \I_{\{#1\}}}}
+\newcommand{\Ind}[1]{\1_{(#1)}}
+
+%--Ortho. Pol--------------
+\newcommand{\polclass}[1]{\ensuremath{\mathrm{#1}}}
+\newcommand{\He}{\polclass{He}}
+\newcommand{\Hek}{\polclass{He}_k}
+\newcommand{\La}{\polclass{La}}
+\newcommand{\Lak}{\polclass{La}_k}
+\newcommand{\Ja}{\polclass{Ja}}
+\newcommand{\Jak}{\polclass{Ja}_k}
+\newcommand{\op}{\polclass{P}}
+\newcommand{\opk}{\polclass{P}_k}
+
+
+%--Proba-------------------
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\P}{\mathbb{P}}
+\def\as{{ \mathrm{a.s.}  }}
+\def\ed{\stackrel{{\mathcal{D}}}{=}}
+\def\iid{\stackrel{{\mathrm{i.i.d}}}{\sim}}
+
+%--Lin. Algebra------------
+
+    %usual set-------
+    \newcommand{\setsqrmat}[1]{\ensuremath{
+     \mathrm{M}_{#1}(\R)
+    }}
+    \newcommand{\setsymmat}[1]{\ensuremath{
+     \mathrm{M}^{(\mathrm{sym})}_{#1}(\R)
+    }}
+   
+    
+\newcommand{\<}{\ensuremath{ \langle }}
+\renewcommand{\>}{\ensuremath{ \rangle }}
+% \vect is already defined at the top of this file as \bm{#1} (bold italic).
+% Switch to the upright-bold version below if you prefer it to match \mat/\tens,
+% but then comment out the definition at the top instead of this one.
+%\newcommand{\vect}[1]{\ensuremath{\boldsymbol{\mathbf{#1}}}}
+\newcommand{\rdmvect}[1]{\ensuremath{\bm{#1}}}
+\newcommand{\mat}[1]{\ensuremath{\boldsymbol{\mathbf{#1}}}}
+\newcommand{\rdmmat}[1]{\ensuremath{\bm{#1}}}
+\newcommand{\tens}[1]{ {\ensuremath{\underline{\boldsymbol{\mathbf{#1}}}}}}
+\newcommand{\rdmtens}[1]{ {\ensuremath{\underline{\bm{#1}}}}}
+\newcommand{\diag}[1]{\ensuremath{\mat{D}_{\vect{#1}} }}
+\newcommand{\Tr}{\ensuremath{\mathrm{Tr}}}
+\renewcommand{\det}{\ensuremath{\mathrm{det}}}
+\newcommand{\rank}{\ensuremath{\mathrm{rank}}}
+%•Norms
+\newcommand{\norm}[1]{\ensuremath{ \|#1 \|}}
+\newcommand{\normop}[1]{\ensuremath{ \|#1 \|_{\mathrm{op}} }} 
+
+%\newcommand{\norm2}[1]{\ensuremath{ \|#1 \|_{2} }}
+\newcommand{\normp}[1]{\ensuremath{ \|#1 \|_{p} }}
+\newcommand{\normf}[1]{\ensuremath{ \|#1 \|_{\mathrm{F}} }}
+\newcommand{\scalar}[1]{\ensuremath{ \< #1 \>}}
+
+%--classical ensembles of RMT--
+%•Gaussian ensembles
+\newcommand{\classens}[1]{\ensuremath{\mathsf{#1}}}
+\newcommand{\GE}{\ensuremath{{ \classens{GU_{\beta}E}}}}
+\newcommand{\GOE}{\ensuremath{{ \classens{GOE}}}}
+\newcommand{\GUE}{\ensuremath{{ \classens{GUE}}}}
+\newcommand{\GSE}{\ensuremath{{ \classens{GSE}}}}
+%•Laguerre ensembles
+\newcommand{\LE}{\ensuremath{{ \classens{LU_{\beta}E}}}}
+\newcommand{\LOE}{\ensuremath{{ \classens{LOE}}}}
+\newcommand{\LUE}{\ensuremath{{ \classens{LUE}}}}
+\newcommand{\LSE}{\ensuremath{{ \classens{LSE}}}}
+%•Laguerre ensembles
+\newcommand{\JE}{\ensuremath{{ \classens{JU_{\beta}E}}}}
+\newcommand{\JOE}{\ensuremath{{ \classens{JOE}}}}
+\newcommand{\JUE}{\ensuremath{{ \classens{JUE}}}}
+\newcommand{\JSE}{\ensuremath{{ \classens{JSE}}}}
+%•Circular ensembles
+\newcommand{\CE}{\ensuremath{{ \classens{CU_{\beta}E}}}}
+\newcommand{\COE}{\ensuremath{{ \classens{COE}}}}
+\newcommand{\CUE}{\ensuremath{{ \classens{CUE}}}}
+\newcommand{\CSE}{\ensuremath{{ \classens{CSE}}}}
+%•Haar Groups
+\newcommand{\grpUNb}{\ensuremath{\classens{U}_{\beta}(N)}}
+\newcommand{\grpUN}{\ensuremath{ \classens{U}(N)}}
+\newcommand{\grpON}{\ensuremath{ \classens{O}(N)}}
+\newcommand{\grpSpN}{\ensuremath{ \classens{Sp}(N)}}
+
+%--free proba-------------------------
+\newcommand{\rectbox}{{\mathpalette\scaledboxplus\relax}}
+\newcommand{\scaledboxplus}[2]{\scalebox{2}[0.95]{$#1\normalboxplus$}}
+\newcommand{\recplus}{\fboxsep0pt\fbox{\rule{0.5em}{0pt}\rule{0pt}{0.5ex}}}
+
+%--Partitions/permutations-----------
+\newcommand{\classpartition}[1]{\ensuremath{\vect{#1}}}
+\newcommand{\classpartitionset}[1]{\ensuremath{\mathcal{}{#1}}}
+\newcommand{\partlambda}{\ensuremath{ \classpartition{\uplambda} }}
+\newcommand{\partmu}{\ensuremath{ \classpartition{\upmu} }}
+\newcommand{\partnu}{\ensuremath{ \classpartition{\upnu} }}
+\newcommand{\partpi}{\ensuremath{ \classpartition{\uppi} }}
+
+\newcommand{\partofint}[1]{\ensuremath{ \classpartitionset{P}{#1}}}
+\newcommand{\partofk}{\ensuremath{ \classpartitionset{P}(k)}}
+\newcommand{\nonpartofint}[1]{\ensuremath{ \classpartitionset{NC}(#1)}}
+\newcommand{\nonpartofk}{\ensuremath{ \classpartitionset{NC}(k)}}
+\newcommand{\sumpovern}{\ensuremath{\sum_{\partlambda \vdash n }}}
+\newcommand{\sumpoverk}{\ensuremath{\sum_{\partlambda \vdash k }}}
+
+\newcommand{\classpermutation}[1]{\ensuremath{#1}}
+\newcommand{\permsigma}{\ensuremath{ \classpermutation{\upsigma} }}
+\newcommand{\permtau}{\ensuremath{\classpermutation{\uptau}}}
+
+%--symm. polynomials------------------
+\newcommand{\classsympol}[1]{\ensuremath{\mathrm{#1}}}
+
+\newcommand{\jack}{\classsympol{J}}
+\newcommand{\jackpl}{\classsympol{J}_{\partlambda}}
+\newcommand{\jackplb}{\classsympol{J}_{\partlambda}^{(\beta/2)}}
+\newcommand{\jackpmu}{\classsympol{J}_{\partmu}}
+\newcommand{\jackpmub}{\classsympol{J}_{\partmu}^{(\beta/2)}}
+\newcommand{\jackpnu}{\classsympol{J}_{\partnu}}
+\newcommand{\jackpnub}{\classsympol{J}_{\partnu}^{(\beta/2)}}
+
+\newcommand{\schur}{\classsympol{s}}
+\newcommand{\schurpl}{\classsympol{s}_{\partlambda}}
+\newcommand{\schurpmu}{\classsympol{s}_{\partmu}}
+\newcommand{\schurpnu}{\classsympol{s}_{\partnu}}
+\newcommand{\LRcoeff}{c_{\partlambda,\partmu}^{\partnu}}
+\newcommand{\JLRcoeff}{c_{\partlambda,\partmu}^{\partnu}(\beta/2)}
+
+
+%--article-specific------------
+\def\LocLip{{\mathrm{Lip_{loc}}  }}
+\def\ks{{k_{\star}}}
+\def\Yf{{ \rdmmat{Y}^{(f)}  }}
+
+\def\coeffk{{\vartheta_k(f)}}
+\def\coeffks{{\vartheta_{\ks}(f)}}
+\def\varfZ{{\vartheta_0(f^2) - \vartheta_0(f)^2 }}
+\def\coeffkn{{\vartheta_k(f_t)}}
+
+\def\xk{{\vect{x}^k}}
+\def\xks{{\vect{x}^\ks}}
+\newcommand{\pert}{\mathrm{pert}}
+\def\fm{{f_M}}
+\def\fn{{f_t}}
+\def\fdm{{f_{\delta,M}}}
+\def\fdmp{{f_{\delta,M}^{\pert}}}
+\def\fnp{{f_{t}^{\pert}}}
+\def\fdmpt{{\Tilde{f}_{\delta,M}^{\pert} }}
+\def\fnpt{{\Tilde{f}_{t}^{\pert} }}
+%\def\Ytf{{  \rdmmat{\tilde Y}^{(f_L)}  }}
+\def\Ytf{{\rdmmat{Y}_{L}^{(f_L)} }}
+\def\Ytfdm{{ \rdmmat{\tilde Y}^{(\fdm)}  }}
+\def\Ytfdmp{{ \rdmmat{\tilde Y}^{(\fdmp)}  }}
+%\def\Ytfnp{{ \rdmmat{\tilde Y}^{(\fnp)}  }}
+\def\Ytfnp{{\rdmmat{Y}_{L}^{(\fnp)} }}
+\def\Ytfdmpt{{ \rdmmat{\tilde Y}^{(\fdmpt)}  }}
+\def\Yfm{{ \rdmmat{Y}^{(\fm)}  }}
+\def\Yfdm{{ \rdmmat{Y}^{(\fdm)}  }}
+\def\Yfdmp{{ \rdmmat{Y}^{(\fdmp)}  }}
+\def\Yfdmpt{{ \rdmmat{Y}^{(\fdmpt)}  }}
+
+\def\wkZ{{w^{(k)}_Z}}
+\def\tC{\widetilde{\mat C}}
+\def\tY{\widetilde{\rdmmat Y}}
+
+\def\coeffkfdm{{\vartheta_k(\fdm)}}
+\def\coeffksfdm{{\vartheta_{\ks}(\fdm)}}
+\def\coeffkfdmp{{\vartheta_k(\fdmp)}}
+\def\coeffksfdmp{{\vartheta_{\ks}(\fdmp)}}
+\def\coeffkfnp{{\vartheta_k(\fnp)}}
+\def\coeffksfnp{{\vartheta_{\ks}(\fnp)}}
+
+\def\Lpdx{{L^p(\dd x)}}
+\def\Ltwodx{{L^2(\dd x)}}
+\def\Lfourdx{{L^4(\dd x)}}
+
+\def\LpZ{{L^p(\mu_Z)}}
+\def\LoneZ{{L^1(\mu_Z)}}
+\def\LtwoZ{{L^2(\mu_Z)}}
+\def\LfourZ{{L^4(\mu_Z)}}
+\def\LinfZ{{L^{\infty}(\mu_Z)}}
+
+%--commands crafted for two channels mode--
+\newcommand{\bkt}[2]{B^{({#1}), t}_{#2}}
+\newcommand{\tbt}[1]{\vect{b}^{t}_{#1}}
+\newcommand{\bttt}[0]{\tilde{\vect{b}}^{t}}
+\newcommand{\akt}[2]{A^{({#1}), t}_{#2}}
+\newcommand{\tat}[1]{\mat{A}^{t}_{#1}}
+\newcommand{\ts}[2]{\mat{S}_{#1, #2}}
+\newcommand{\trn}[2]{\mat{R}_{#1, #2}}
+\newcommand{\tsig}[2]{\mat{\Sigma}^{#1}_{#2}}
+\newcommand{\xat}[3]{\hat{x}^{({#1}), #2}_{#3}}
+\newcommand{\xtt}[2]{\vect{x}^{#1}_{#2}}
+\newcommand{\xttt}[1]{\tilde{\vect{x}}^{#1}}
+
+
+\def\tib{\vect{b}}
+\def\tia{\mat{A}}
+\def\tix{\vect{x}}
+\def\xone{x^{(1)}}
+\def\xtwo{x^{(2)}}
+\def\oner{\tilde{1}_R}
+\def\onel{\tilde{1}_L}
+\def\ovN{{\frac{1}{N}}}
+\def\ovsN{{\frac{1}{\sqrt{N}}}}
+\def\dovN{{\frac{\mat{\Delta}^{-1}}{N}}}
+\def\calij{\mathcal{I}-\mathcal{J}}
+\def\calijs{\mathcal{I}-\mathcal{J^*}}
+\def\kerij{\mathrm{Ker}(\mathcal{I}-\mathcal{J})}
+\def\kerijs{\mathrm{Ker}(\mathcal{I}-\mathcal{J}^*)}
+
+%--commands crafted for tensor mode--
+\newcommand{\Tind}[2]{T_{#1 ... #2}}
+
+%--maths symbol commands--
+\newcommand\normvert[1]{\left\lVert{#1}\right\rVert}
+\newcommand{\para}[1]{\left( {#1} \right)}
+\newcommand{\brac}[1]{\left[ {#1} \right]}
+
+
+%--other commands-----
+
+
+\newcommand\given[1][]{\:#1\vert\:}
+\DeclareMathOperator{\1}{\mathbbm{1}}
+
+\newcommand{\ba}{{\beta}}
+\newcommand{\bb}{{\beta_{SNR}}}
+\newcommand{\bc}{{\beta_{S}}}
+\newcommand{\cR}{\mathcal{R}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cG}{\mathcal{G}}
+\newcommand{\cB}{\mathcal{B}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\sD}{\mathscr{D}}
+\newcommand{\sO}{\mathcal{O}}
+\newcommand{\so}{\mathcal{o}}
+\newcommand{\cQ}{\mathcal{Q}}
+\newcommand{\sS}{\mathscr{S}}
+\newcommand{\sE}{\mathscr{E}}
+\newcommand{\sM}{\mathcal{M}}
+\newcommand{\sP}{\mathscr{P}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\sC}{\mathscr{C}}
+\newcommand{\cC}{\mathcal{C}}
+\newcommand{\sI}{\mathscr{S}}
+\newcommand{\sL}{\mathscr{L}}
+\newcommand{\sX}{\mathcal{X}}
+\newcommand{\cI}{{\mathcal I}}
+\newcommand{\bpi}{\bm{\pi}}
+
+\newcommand{\ncal}{\mathcal{N}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\mmm}{\mathrel{}\mid\mathrel{}}
+
+\newcommand{\acts}{\curvearrowright}
+\newcommand{\dx}{\dmesure\!}
+\newcommand{\deron}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\derond}[2]{\frac{\partial^2 #1}{\partial #2 ^2}}
+\newcommand{\deronc}[3]{\frac{\partial^2 #1}{\partial #2 \partial #3}}
+\newcommand{\esp}[2][]{\mathbb{E}_{#1}\!\left[ #2 \right]}
+\newcommand{\espcond}[3][]{\mathbb{E}_{#1}\!\left[ #2 \rule{0pt}{4mm}\mvert #3 \right]}
+\newcommand{\loi}[1]{\,\dmesure\! P_{#1}}
+\newcommand{\grad}{\gradient}
+\newcommand{\intg}{[\![}
+\newcommand{\intd}{]\!]}
+\newcommand{\mvert}{\mathrel{}\middle|\mathrel{}}
+%\newcommand{\norm}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\Norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\prsc}[2]{\left\langle #1\,, #2 \right\rangle}
+\newcommand{\rot}{\rotationnel}
+\newcommand{\trans}{\leftidx{^\text{t}}}
+\newcommand{\ubvs}{\tilde{\bm{\sigma}}}
+\newcommand{\ubvp}{\tilde{\bm{\rho}}}
+\newcommand{\us}{\tilde{\sigma}}
+\newcommand{\bR}{\bm{R}}
+\newcommand{\btR}{\tilde{\bm{R}}}
+\newcommand{\bQ}{\bm{Q}}
+\newcommand{\bM}{\bm{M}}
+\newcommand{\bS}{\bm{\Sigma}}
+\newcommand{\bA}{\bm{A}}
+\newcommand{\bO}{\bm{O}}
+\newcommand{\bL}{\bm{\Lambda}}
+\newcommand{\bD}{\bm{\Delta}}
+\newcommand{\bd}{\bm{D}}
+\newcommand{\bP}{\bm{P}}
+\newcommand{\bU}{\bm{U}}
+\newcommand{\bC}{\bm{C}}
+\newcommand{\be}{\bm{E}}
+\newcommand{\bE}{\bm{\mathcal{E}}}
+\newcommand{\bz}{\bm{z}}
+\newcommand{\bN}{\bm{N}}
+\newcommand{\bB}{\bm{B}}
+\newcommand{\bT}{\bm{T}}
+\newcommand{\bI}{\bm{I}}
+\newcommand{\bxi}{\bm{\xi}}
+\newcommand{\bx}{{\bm{x}}}
+\newcommand{\bu}{{\bm{u}}}
+\newcommand{\bt}{{\bm{t}}}
+
+\newcommand\bg{{\bm{g}}}
+\newcommand{\out}{\mathrm{out}}
+
+\DeclareMathOperator{\bij}{Bij}
+\DeclareMathOperator{\diam}{diam}
+\DeclareMathOperator{\Div}{div}
+\DeclareMathOperator{\dmesure}{d}
+\DeclareMathOperator{\gradient}{grad}
+\DeclareMathOperator{\Id}{Id}
+\DeclareMathOperator{\im}{Im}
+\DeclareMathOperator{\rk}{rg}
+\DeclareMathOperator{\rotationnel}{rot}
+\DeclareMathOperator{\tr}{Tr}
+
+
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\renewcommand{\epsilon}{\varepsilon}
+
+%\renewcommand{\FrenchLabelItem}{\textbullet}
+\def\supp{{\mbox{supp}}}
+\def\pP{{\mathbb P}}
+
+\def\pQ{{\mathbb Q}}
+\def\pG{{\mathbb G}}
+\def\cA{{\mathcal A}}
+\newcommand{\iii}{i_1,\dots,i_p}
+\def\by{{\mathbf{y}}}
+\def\bs{{\mathbf{s}}}
+\newcommand{\tx}{\tilde{x}}
+\def\tr{{\rm Tr}}
+\def\R{{\mathbb R}}
+\def\rank{{\rm rank}}
+\def\T{{\mathbb T}}
+\def\IND{{\mathbf 1}}
+
+% Commande pour créer un chiffre entouré avec épaisseur de ligne ajustée
+\newcommand{\customcircled}[1]{
+  \tikz[baseline=(char.base)]{
+    \node[shape=circle, draw, inner sep=1pt, line width=0.8pt] (char) {#1};
+  }
+}
+
+\definecolor{FireBrick}{rgb}{0.698, 0.133, 0.133}
+
+
+
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
