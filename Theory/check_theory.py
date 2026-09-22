@@ -40,38 +40,4 @@ def plot_overlap_vs_n(ax, a, b, rho):
     ax.set_title(f"a={a}, b={b}, rho={rho}"); ax.legend(); ax.grid()
 
 
-# ---- 1. overlap vs n, one parameter set -------------------------------
-fig, ax = plt.subplots()
-plot_overlap_vs_n(ax, a=2, b=3, rho=0.5)
-fig.savefig("overlap_vs_n.png", dpi=120)
 
-# ---- 2. overlap vs n, varying a, b, rho -------------------------------
-PARAMS = [(2, 3, 0.1), (2, 3, 0.9), (1, 4, 0.5), (3, 3, 0.5)]
-fig, axes = plt.subplots(1, len(PARAMS), figsize=(4 * len(PARAMS), 3.5), sharey=True)
-for ax, (a, b, rho) in zip(axes, PARAMS):
-    plot_overlap_vs_n(ax, a, b, rho)
-fig.tight_layout(); fig.savefig("overlap_vs_n_params.png", dpi=120)
-
-# ---- 3. eigenvalues of P vs a, b, rho: theory vs numerics -------------
-n, SIMS = 500, 30                      # SIMS simulations per point, error bars = std
-base = dict(a=2.0, b=3.0, rho=0.5)
-sweeps = dict(a=np.linspace(0.1, 5, 40), b=np.linspace(0.1, 5, 40), rho=np.linspace(0, 1, 40))
-fig, axes = plt.subplots(1, 3, figsize=(13, 3.5))
-for ax, (name, grid) in zip(axes, sweeps.items()):
-    p = dict(base)
-    th, num = [], []
-    for val in grid:
-        p[name] = val
-        runs = [make(n, **p).eigen_P()[0][:2] for _ in range(SIMS)]
-        th.append(make(n, **p).theory_eig())
-        num.append((np.mean(runs, 0), np.std(runs, 0)))
-    th, num = np.array(th), np.array(num)          # num: (points, mean/std, 2)
-    ax.plot(grid, th[:, 0], "k--", label="theory")
-    ax.plot(grid, th[:, 1], "k--")
-    ax.errorbar(grid, num[:, 0, 0], num[:, 1, 0], color="C0", capsize=2, lw=1, label=r"$\theta_+$ simulation")
-    ax.errorbar(grid, num[:, 0, 1], num[:, 1, 1], color="C1", capsize=2, lw=1, label=r"$\theta_-$ simulation")
-    others = ", ".join(f"{k}={v}" for k, v in base.items() if k != name)
-    ax.set_xlabel(name); ax.set_ylabel("eigenvalue of P"); ax.set_title(f"n={n}, {others}")
-    ax.grid(); ax.legend(fontsize=8)
-fig.tight_layout(); fig.savefig("eigenvalues_P.png", dpi=120)
-plt.show()

@@ -6,7 +6,7 @@ sqrt(1 - theta_+^-2), hence  |<x_hat, x_i>| -> sqrt(1 - theta_+^-2) |<v_+, x_i>|
 
 Figures (saved next to this file):
   eig   : eigenvalues_Y.png       top-2 eigenvalues of Y vs a, b, rho (+ bulk edge)
-  lam   : overlaps_vs_lambda.png  overlaps vs lambda (lambda1 = lambda2 = lambda)
+  lam   : overlaps_vs_lambda.png  |<u_pm, v_pm>| vs lambda (lambda1 = lambda2 = lambda)
   heat  : heat_lambda1_rho.png    |<x_hat,x1>|, |<x_hat,x2>| vs (lambda1, rho), lambda2 fixed
           heat_a_rho.png          same vs (a, rho), b fixed
   phase : phase_rho=*.png         RGB phase diagrams in the (a, b) plane, one per rho
@@ -92,12 +92,20 @@ def fig_eig(n=500, sims=30):
     fig.tight_layout(); fig.savefig("eigenvalues_Y.png", dpi=120)
 
 
-def fig_lambda(n=500, rho=0.3, sims=30):
-    """Overlaps vs lambda (lambda1 = lambda2 = lambda, so a = b = lambda/sqrt2, theta_pm = a(1 +- rho)).
+def fig_lambda(n=1000, rho=0.3, sims=30):
+    """BBP eigenvector check vs lambda (lambda1 = lambda2 = lambda, so a = b = lambda/sqrt2
+    and theta_pm = a(1 +- rho)).
 
-    Dots/error bars: mean +- std over `sims` simulations. Dashed black: theory.
+    Plots |<u_pm, v_pm>|, the overlap between the eigenvectors u_pm of the NOISY matrix
+    Y = P + W and the eigenvectors v_pm of the NOISELESS signal matrix P (report, eq. bbp-vec):
+    theory says |<u_pm, v_pm>| -> sqrt(1 - theta_pm^-2) above threshold, 0 below.
+
+    NB this is NOT the overlap with the signals themselves: that one is
+    m_i = |<x_hat, x_i>| (report, eq. m12), computed by `theory_overlaps` / `sample_overlaps`.
+
+    Dots/error bars: mean +- std over `sims` simulations. Dashed: theory.
     """
-    lams = np.linspace(0.1, 5, 100)
+    lams = np.linspace(0.1, 5, 50)
     mean, std, th = [], [], []
     for lam in lams:
         a = b = ALPHA * lam
@@ -106,39 +114,41 @@ def fig_lambda(n=500, rho=0.3, sims=30):
             S = make(n, a, b, rho)
             _, V = top2(S.naive_matrix)
             v1, v2 = S.theory_vp()
-            runs.append([abs(V[:, 0] @ S.x1), abs(V[:, 0] @ S.x2), abs(V[:, 0] @ v1), abs(V[:, 1] @ v2)])
+            runs.append([abs(V[:, 0] @ v1), abs(V[:, 1] @ v2)])
         mean.append(np.mean(runs, 0)); std.append(np.std(runs, 0))
-        tp, tm = theta_pm(a, b, rho)
-        th.append([*theory_overlaps(a, b, rho),
-                   np.sqrt(max(0, 1 - tp**-2)), np.sqrt(max(0, 1 - tm**-2))])
+        th.append([np.sqrt(max(0, 1 - t**-2)) for t in theta_pm(a, b, rho)])
     mean, std, th = np.array(mean), np.array(std), np.array(th)
-    labels = [r"$|\langle \hat x, x_1\rangle|$", r"$|\langle \hat x, x_2\rangle|$",
-              r"$|\langle \hat v_+, v_+\rangle|$", r"$|\langle \hat v_-, v_-\rangle|$"]
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
-    for ax, ks in zip(axes, ([0, 1], [2, 3])):
-        for k in ks:
-            ax.errorbar(lams, mean[:, k], std[:, k], color=f"C{k}", capsize=2, lw=1, label=labels[k] + " simulation")
-            ax.plot(lams, th[:, k], "k--", label="theory" if k == ks[0] else None)
-        for tc, name in [(1 / (ALPHA * (1 + rho)), r"$\theta_+=1$"), (1 / (ALPHA * (1 - rho)), r"$\theta_-=1$")]:
-            ax.axvline(tc, color="red", lw=1); ax.text(tc, 0.05, name, color="red", ha="right", rotation=90)
-        ax.set_xlabel(r"$\lambda$ ($\lambda_1=\lambda_2=\lambda$)"); ax.set_ylabel("overlap")
-        ax.set_title(f"n={n}, rho={rho}, {sims} sims"); ax.grid(); ax.legend(fontsize=8, loc="lower right")
+    sim_labels = [r"simulation: $|\langle \hat{u}_+, \hat{v}_+\rangle|$ ($n=%d$, %d runs)" % (n, sims),
+                  r"simulation: $|\langle \hat{u}_-, \hat{v}_-\rangle|$ ($n=%d$, %d runs)" % (n, sims)]
+    th_labels = [r"theory: $\sqrt{1-\theta_+^{-2}}$", r"theory: $\sqrt{1-\theta_-^{-2}}$"]
+    colors = ["C0", "C1"]                       # + branch blue, - branch orange
+    fig, ax = plt.subplots(figsize=(7.5, 5))
+    for k in range(2):
+        ax.errorbar(lams, mean[:, k], std[:, k], color=colors[k], capsize=2, lw=1, label=sim_labels[k])
+        ax.plot(lams, th[:, k], "--", color=colors[k], lw=2.2, label=th_labels[k])
+    ax.axvline(1 / (ALPHA * (1 + rho)), color="red", lw=1.2, label=r"BBP threshold $\theta_+=1$")
+    ax.axvline(1 / (ALPHA * (1 - rho)), color="purple", lw=1.2, label=r"BBP threshold $\theta_-=1$")
+    ax.set_xlabel(r"$\lambda$ ($\lambda_1=\lambda_2=\lambda$)")
+    ax.set_ylabel(r"$|\langle \hat{u}_\pm, \hat{v}_\pm\rangle|$")
+    ax.set_title(rf"Noisy vs noiseless eigenvectors   ($\rho$={rho}, $\lambda_1=\lambda_2=\lambda$)")
+    ax.grid(); ax.legend(fontsize=9, loc="lower right")
     fig.tight_layout(); fig.savefig("overlaps_vs_lambda.png", dpi=120)
 
 
 def heat(xname, xs, b_fixed, fname, n=300, reps=4):
     """Heatmaps of |<x_hat,x1>|, |<x_hat,x2>| vs (x, rho); x is lambda1 or a; b fixed."""
-    rhos = np.linspace(0, 1, 21)
-    A = xs * ALPHA if xname == "lambda1" else xs
-    Z = np.array([[sample_overlaps(n, a, b_fixed, r, reps) for a in A] for r in rhos])  # (rho, x, 2)
+    rhos = np.linspace(0, 1, 30)
+    A = xs * ALPHA if xname == r"\lambda_1" else xs
+    Z = np.array([[sample_overlaps(n, a, b_fixed, r, reps) for a in A] for r in rhos])  # (rho, x, 2)       We are using Y noisy here
     X, R = np.meshgrid(xs, rhos)
-    tp, _ = theta_pm(X * ALPHA if xname == "lambda1" else X, b_fixed, R)
+    tp, _ = theta_pm(X * ALPHA if xname == r"\lambda_1" else X, b_fixed, R)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     for k, ax in enumerate(axes):
         im = ax.pcolormesh(xs, rhos, Z[:, :, k], cmap="Greys", vmin=0, vmax=1, shading="nearest")
         ax.contour(X, R, tp, levels=[1], colors="red", linewidths=2)
-        ax.set_xlabel(xname); ax.set_ylabel("rho")
-        ax.set_title(rf"$|\langle \hat x, x_{k+1}\rangle|$,  b={b_fixed:.2f}, n={n}  (red: $\theta_+=1$)")
+        ax.plot([], [], color="red", lw=2, label=r"$\theta_+=1$")     # legend entry for the contour
+        ax.set_xlabel(xname); ax.set_ylabel(r"$\rho$"); ax.legend(loc="upper right")
+        ax.set_title(rf"$|\langle \hat x, x_{k+1}\rangle|$,  b={b_fixed:.2f}, n={n}")
         fig.colorbar(im, ax=ax)
     fig.tight_layout(); fig.savefig(fname, dpi=120)
 
