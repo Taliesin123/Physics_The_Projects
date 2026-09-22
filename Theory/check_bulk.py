@@ -119,8 +119,8 @@ def fig_lambda(n=500, rho=0.3, sims=30):
         for k in ks:
             ax.errorbar(lams, mean[:, k], std[:, k], color=f"C{k}", capsize=2, lw=1, label=labels[k] + " simulation")
             ax.plot(lams, th[:, k], "k--", label="theory" if k == ks[0] else None)
-        for tc, name in [(1 / (ALPHA * (1 + rho)), r"$\theta_+=1$"), (1 / (ALPHA * (1 - rho)), r"$\theta_-=1$")]:
-            ax.axvline(tc, color="red", lw=1); ax.text(tc, 0.05, name, color="red", ha="right", rotation=90)
+        ax.axvline(1 / (ALPHA * (1 + rho)), color="red", lw=1.2, label=r"$\theta_+=1$")
+        ax.axvline(1 / (ALPHA * (1 - rho)), color="purple", lw=1.2, label=r"$\theta_-=1$")
         ax.set_xlabel(r"$\lambda$ ($\lambda_1=\lambda_2=\lambda$)"); ax.set_ylabel("overlap")
         ax.set_title(f"n={n}, rho={rho}, {sims} sims"); ax.grid(); ax.legend(fontsize=8, loc="lower right")
     fig.tight_layout(); fig.savefig("overlaps_vs_lambda.png", dpi=120)
@@ -137,8 +137,9 @@ def heat(xname, xs, b_fixed, fname, n=300, reps=4):
     for k, ax in enumerate(axes):
         im = ax.pcolormesh(xs, rhos, Z[:, :, k], cmap="Greys", vmin=0, vmax=1, shading="nearest")
         ax.contour(X, R, tp, levels=[1], colors="red", linewidths=2)
-        ax.set_xlabel(xname); ax.set_ylabel("rho")
-        ax.set_title(rf"$|\langle \hat x, x_{k+1}\rangle|$,  b={b_fixed:.2f}, n={n}  (red: $\theta_+=1$)")
+        ax.plot([], [], color="red", lw=2, label=r"$\theta_+=1$")     # legend entry for the contour
+        ax.set_xlabel(xname); ax.set_ylabel("rho"); ax.legend(loc="upper right")
+        ax.set_title(rf"$|\langle \hat x, x_{k+1}\rangle|$,  b={b_fixed:.2f}, n={n}")
         fig.colorbar(im, ax=ax)
     fig.tight_layout(); fig.savefig(fname, dpi=120)
 
