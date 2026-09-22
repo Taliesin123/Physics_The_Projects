@@ -92,7 +92,7 @@ def fig_eig(n=500, sims=30):
     fig.tight_layout(); fig.savefig("eigenvalues_Y.png", dpi=120)
 
 
-def fig_lambda(n=500, rho=0.3, sims=30):
+def fig_lambda(n=1000, rho=0.3, sims=30):
     """BBP eigenvector check vs lambda (lambda1 = lambda2 = lambda, so a = b = lambda/sqrt2
     and theta_pm = a(1 +- rho)).
 
@@ -137,17 +137,17 @@ def fig_lambda(n=500, rho=0.3, sims=30):
 
 def heat(xname, xs, b_fixed, fname, n=300, reps=4):
     """Heatmaps of |<x_hat,x1>|, |<x_hat,x2>| vs (x, rho); x is lambda1 or a; b fixed."""
-    rhos = np.linspace(0, 1, 21)
-    A = xs * ALPHA if xname == "lambda1" else xs
-    Z = np.array([[sample_overlaps(n, a, b_fixed, r, reps) for a in A] for r in rhos])  # (rho, x, 2)
+    rhos = np.linspace(0, 1, 30)
+    A = xs * ALPHA if xname == r"\lambda_1" else xs
+    Z = np.array([[sample_overlaps(n, a, b_fixed, r, reps) for a in A] for r in rhos])  # (rho, x, 2)       We are using Y noisy here
     X, R = np.meshgrid(xs, rhos)
-    tp, _ = theta_pm(X * ALPHA if xname == "lambda1" else X, b_fixed, R)
+    tp, _ = theta_pm(X * ALPHA if xname == r"\lambda_1" else X, b_fixed, R)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     for k, ax in enumerate(axes):
         im = ax.pcolormesh(xs, rhos, Z[:, :, k], cmap="Greys", vmin=0, vmax=1, shading="nearest")
         ax.contour(X, R, tp, levels=[1], colors="red", linewidths=2)
         ax.plot([], [], color="red", lw=2, label=r"$\theta_+=1$")     # legend entry for the contour
-        ax.set_xlabel(xname); ax.set_ylabel("rho"); ax.legend(loc="upper right")
+        ax.set_xlabel(xname); ax.set_ylabel(r"$\rho$"); ax.legend(loc="upper right")
         ax.set_title(rf"$|\langle \hat x, x_{k+1}\rangle|$,  b={b_fixed:.2f}, n={n}")
         fig.colorbar(im, ax=ax)
     fig.tight_layout(); fig.savefig(fname, dpi=120)
