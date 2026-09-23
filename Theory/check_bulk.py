@@ -1,4 +1,4 @@
-"""Same checks as check_theory.py but WITH the noise bulk: Y = P + W, W Wigner.
+"""WITH the noise bulk: Y = P + W, W Wigner.
 
 Theory (report, eq. bbp): outliers of Y sit at theta + 1/theta when theta > 1 (else at the
 bulk edge 2); the top eigenvector x_hat of Y overlaps the eigenvector v_+ of P with
@@ -92,7 +92,7 @@ def fig_eig(n=500, sims=30):
     fig.tight_layout(); fig.savefig("eigenvalues_Y.png", dpi=120)
 
 
-def fig_lambda(n=1000, rho=0.3, sims=30):
+def fig_lambda(n=2000, rho=0.3, sims=30):
     """BBP eigenvector check vs lambda (lambda1 = lambda2 = lambda, so a = b = lambda/sqrt2
     and theta_pm = a(1 +- rho)).
 
@@ -105,7 +105,7 @@ def fig_lambda(n=1000, rho=0.3, sims=30):
 
     Dots/error bars: mean +- std over `sims` simulations. Dashed: theory.
     """
-    lams = np.linspace(0.1, 5, 50)
+    lams = np.linspace(0.1, 5, 100)
     mean, std, th = [], [], []
     for lam in lams:
         a = b = ALPHA * lam
@@ -159,7 +159,7 @@ def fig_heat():
     heat("a", np.linspace(0.1, 3, 25), 0.7, "heat_a_rho.png")
 
 
-def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=300, reps=3, omax=0.7):
+def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=500, reps=3, omax=0.7):
     grid = np.linspace(0.1, 3, 75)
     A, B = np.meshgrid(grid, grid)                      # A[j, i] = grid[i] (x), B[j, i] = grid[j] (y)
     for rho in rhos:
