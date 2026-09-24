@@ -60,9 +60,9 @@ def sample_overlaps(n, a, b, rho, reps):
     """Mean over reps of (|<x_hat,x1>|, |<x_hat,x2>|), x_hat = top eigenvector of Y."""
     o = np.zeros(2)
     for _ in range(reps):
-        S = make(n, a, b, rho)
-        _, V = top2(S.naive_matrix)          # naive_matrix = alpha*Y1 + sqrt(1-alpha^2)*Y2 = Y
-        o += abs(V[:, 0] @ S.x1), abs(V[:, 0] @ S.x2)
+        S = TwoSpikes(n, a / ALPHA, b / np.sqrt(1 - ALPHA**2), rho, alpha=ALPHA)
+                # naive_matrix = alpha*Y1 + sqrt(1-alpha^2)*Y2 = Y
+        o += S.overlaps("naive")
     return o / reps
 
 
@@ -72,15 +72,18 @@ def fig_eig(n=500, sims=30):
     base = dict(a=2.0, b=3.0, rho=0.5)
     sweeps = dict(a=np.linspace(0.1, 4, 40), b=np.linspace(0.1, 4, 40), rho=np.linspace(0, 1, 40))
     fig, axes = plt.subplots(1, 3, figsize=(13, 3.5))
+
     for ax, (name, grid) in zip(axes, sweeps.items()):
+
         p = dict(base)
         th, mean, std = [], [], []
         for val in grid:
             p[name] = val
             th.append(theta_pm(**p))
-            runs = [top2(make(n, **p).naive_matrix)[0] for _ in range(sims)]
+            runs = [top2(make(n, **p).naive_matrix)[0] for _ in range(sims)]  #top eigenval pf Y
             mean.append(np.mean(runs, 0)); std.append(np.std(runs, 0))
         th, mean, std = np.array(th), np.array(mean), np.array(std)
+
         ax.plot(grid, bbp(th[:, 0]), "k--", label=r"theory $\theta_\pm + 1/\theta_\pm$")
         ax.plot(grid, bbp(th[:, 1]), "k--")
         ax.errorbar(grid, mean[:, 0], std[:, 0], color="C0", capsize=2, lw=1, label=r"$\lambda_1(Y)$ simulation")
@@ -115,6 +118,7 @@ def fig_lambda(n=1000, rho=0.3, sims=30):
             _, V = top2(S.naive_matrix)
             v1, v2 = S.theory_vp()
             runs.append([abs(V[:, 0] @ v1), abs(V[:, 1] @ v2)])
+            
         mean.append(np.mean(runs, 0)); std.append(np.std(runs, 0))
         th.append([np.sqrt(max(0, 1 - t**-2)) for t in theta_pm(a, b, rho)])
     mean, std, th = np.array(mean), np.array(std), np.array(th)
@@ -156,7 +160,7 @@ def heat(xname, xs, b_fixed, fname, n=300, reps=4):
 def fig_heat():
     lam2 = 1.0
     heat("lambda1", np.linspace(0.1, 3, 25), np.sqrt(1 - ALPHA**2) * lam2, "heat_lambda1_rho.png")
-    heat("a", np.linspace(0.1, 3, 25), 0.7, "heat_a_rho.png")
+    heat("a", np.linspace(0.1, 3, 25), 2, "heat_a_rho.png")
 
 
 def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=300, reps=3, omax=0.7):
