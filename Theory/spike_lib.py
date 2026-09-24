@@ -256,6 +256,15 @@ class TwoSpikes:
 
         return eigenvalues, eigenvectors
 
+    def eigen_Y(self):  # déja trié décroissant : plus grand eigenval[0] et vect : eigenvect[:, 0]
+            eigenvalues, eigenvectors =  np.linalg.eigh(self.Y)
+    
+            idx = np.argsort(eigenvalues)[::-1]
+            eigenvalues = eigenvalues[idx]
+            eigenvectors = eigenvectors[:, idx]
+    
+            return eigenvalues, eigenvectors
+
     @staticmethod
     def power_iteration(M, iterations=50, tol=1e-7):
         N = M.shape[0]
