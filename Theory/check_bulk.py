@@ -80,6 +80,7 @@ def fig_eig(n=500, sims=30):
     fig.tight_layout(); fig.savefig("eigenvalues_Y.png", dpi=120)
 
 
+#### a refaire 
 def fig_lambda(n=2000, rho=0.3, sims=30):
     """BBP eigenvector check vs lambda (lambda1 = lambda2 = lambda, so a = b = lambda/sqrt2
     and theta_pm = a(1 +- rho)).
@@ -96,12 +97,18 @@ def fig_lambda(n=2000, rho=0.3, sims=30):
     lams = np.linspace(0.1, 5, 100)
     mean, std, th = [], [], []
     for lam in lams:
-        a = b = ALPHA * lam
+        a = ALPHA * lam
+        b =
         runs = []
         for _ in range(sims):
-            S = make(n, a, b, rho)
-            _, V = top2(S.naive_matrix)
-            v1, v2 = S.theory_vp()
+            S = make(n, lam, lam, rho)
+            Sth = TwoS_theory(n, lam, lam, rho)
+    ### compute methods (called function in here are at the bottom of the class)
+            S.compute_method(["naive"])
+            V = S.get_theta("naive")
+            _ , V1= Sth.get_eigY()
+            v1 = V1[0]
+            th
             runs.append([abs(V[:, 0] @ v1), abs(V[:, 1] @ v2)])
             
         mean.append(np.mean(runs, 0)); std.append(np.std(runs, 0))
@@ -154,7 +161,7 @@ def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=500, reps=3, omax=0.7):
     for rho in rhos:
         Z = np.array([[sample_overlaps(n, a, b, rho, reps) for a in grid] for b in grid])  # (b, a, 2)
         rgb = np.zeros((*Z.shape[:2], 3)); rgb[..., :2] = np.clip(Z / omax, 0, 1)
-        tp, tm = theta_pm(A, B, rho)
+        tp, tm = theta_pm(A, B, rho)  # juste garder thetaPlus
         fig, ax = plt.subplots(figsize=(6, 5))
         ax.imshow(rgb, origin="lower", extent=[grid[0], grid[-1], grid[0], grid[-1]], aspect="auto")
         ax.axvline(1, color="white", ls="--", lw=1); ax.axhline(1, color="white", ls="--", lw=1)
