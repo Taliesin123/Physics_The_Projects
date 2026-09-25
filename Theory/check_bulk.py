@@ -17,33 +17,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from spike_lib import TwoSpikes
+from Two_spikes_th_lib import TwoS_theory
 
+    
 ALPHA = np.sqrt(0.5)
 
 
-# ---------------------------------------------------------------- theory
-def theta_pm(a, b, rho):
-    d = np.sqrt((a - b) ** 2 / 4 + a * b * rho**2)
-    return (a + b) / 2 + d, (a + b) / 2 - d
-
-
-def bbp(theta):
-    return np.where(theta > 1, theta + 1 / np.maximum(theta, 1e-12), 2.0)
-
-
-def theory_overlaps(a, b, rho):
-    """Predicted |<x_hat, x1>|, |<x_hat, x2>| for the top eigenvector x_hat of Y.
-
-    v_+ = X u with u the top eigenvector of K G (2x2), see report; then
-    <v_+, x_i> = (G u)_i / sqrt(u^T G u), damped by the BBP factor sqrt(1 - theta_+^-2).
-    """
-    G = np.array([[1, rho], [rho, 1]])
-    K = np.diag([a, b])
-    w, U = np.linalg.eig(K @ G)
-    u = U[:, np.argmax(w)]
-    th = w.max()
-    ov = np.abs(G @ u) / np.sqrt(u @ G @ u)
-    return (np.sqrt(1 - th**-2) if th > 1 else 0.0) * ov
 
 
 # ---------------------------------------------------------------- numerics
@@ -76,16 +55,22 @@ def fig_eig(n=500, sims=30):
     for ax, (name, grid) in zip(axes, sweeps.items()):
 
         p = dict(base)
-        th, mean, std = [], [], []
+        th, bbp, mean, std = [], [], []
         for val in grid:
             p[name] = val
-            th.append(theta_pm(**p))
+
+            lam1 = p["a"]/ALPHA
+            lam2 = p["b"]/np.sqrt(1 - ALPHA**2)
+            S = TwoS_theory(n, lam1, lam2, p["rho"])
+            _, eig = S.get_eigY()
+            th.append(eig)
+            bbp.append()
             runs = [top2(make(n, **p).naive_matrix)[0] for _ in range(sims)]  #top eigenval pf Y
             mean.append(np.mean(runs, 0)); std.append(np.std(runs, 0))
         th, mean, std = np.array(th), np.array(mean), np.array(std)
 
-        ax.plot(grid, bbp(th[:, 0]), "k--", label=r"theory $\theta_\pm + 1/\theta_\pm$")
-        ax.plot(grid, bbp(th[:, 1]), "k--")
+        ax.plot(grid, th[:, 0], "k--", label=r"theory $\theta_\pm + 1/\theta_\pm$")
+        ax.plot(grid, th[:, 1], "k--")
         ax.errorbar(grid, mean[:, 0], std[:, 0], color="C0", capsize=2, lw=1, label=r"$\lambda_1(Y)$ simulation")
         ax.errorbar(grid, mean[:, 1], std[:, 1], color="C1", capsize=2, lw=1, label=r"$\lambda_2(Y)$ simulation")
         ax.axhline(2, color="gray", ls=":", label="bulk edge")
