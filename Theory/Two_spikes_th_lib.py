@@ -1,5 +1,6 @@
 
 import numpy as np
+import math 
 
 class TwoS_theory:
     def __init__(self, N, lam1, lam2, rho, mu=1.0, alpha=np.sqrt(0.5)):
@@ -79,19 +80,20 @@ def eigvect_P(a,b,x1,x2,rho):
 
     return vp, vm
 
-def eigval_Y(thetap, thetam):
+def eigval_Y(a,b,rho, c=0):
     """ Top eig of Y from BBP """
-    th= [thetap, thetam]
-    return [theta + 1/np.maximum(theta, 1e-12) if theta > 1 else 2
+    th= eigval_P(a,b,rho)
+    return [theta + 1/np.maximum(theta, 1e-12) +c if theta > 1 else 2
         for theta in th]
 
 
 def overlap_Y_P(theta):
-    
-    if theta > 1e-12:
-        return np.sqrt(1 - 1/(theta**2))
-    else:
-        return 100
+    theta = np.asarray(theta)
+    return np.where(
+        theta > 1 +1e-12,
+        np.sqrt(1 - 1 / theta**2),
+        0
+    )
 
 def overlap_naive_signal(theta, rho, a, b):
     
@@ -104,4 +106,12 @@ def overlap_naive_signal(theta, rho, a, b):
     return o1, o2
 
 
+def semi_circle(z):
+    z = np.asarray(z)
+    result = np.zeros_like(z, dtype=float)
 
+    mask = np.abs(z) < 2 - 1e-12
+    result[mask] = np.sqrt(4 - z[mask]**2) / (2 * np.pi) 
+
+    return result
+     

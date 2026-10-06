@@ -100,7 +100,6 @@ class TwoSpikes:
         return self.P
 
 
-
     
     ### compute methods (called function in here are at the bottom of the class)
     def compute_method(self, method):
@@ -191,6 +190,12 @@ class TwoSpikes:
         _, self.theta["naive"] = self.top_eigenvector(self.naive_matrix)
         return self.theta["naive"]
 
+    def A(self,x1,mu):
+        F1 = self.fisher_MS(x1, self.lam1)
+        N = self.N
+        A = self.Y2 - np.eye(N) + 2 * mu * F1
+        return A
+    
     def x_fisher(self, method, solve=True):
         """Compute the Fisher-regularized estimators.
 
@@ -201,9 +206,8 @@ class TwoSpikes:
         N = self.N
 
         self.compute_theta1()
-        F1 = self.fisher_MS(self.theta["1"], self.lam1)
-        A = self.Y2 - np.eye(N) + 2 * mu * F1
-
+        
+        A = self.A(self.theta["1"], mu)
         thetaA = np.zeros(N)
         thetaB = np.zeros(N)
 
