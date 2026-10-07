@@ -10,12 +10,15 @@ Figures (saved next to this file):
   heat  : heat_lambda1_rho.png    |<x_hat,x1>|, |<x_hat,x2>| vs (lambda1, rho), lambda2 fixed
           heat_a_rho.png          same vs (a, rho), b fixed
   phase : phase_rho=*.png         RGB phase diagrams in the (a, b) plane, one per rho
-Run:  python check_bulk.py [eig lam heat phase]      (no argument = all)
+  comp_x_hat : comp_x_hat.png  top eigenvalue of A = Y2 - I + 2 mu F1(x) vs rho and vs lambda1, for
+          x = true x_hat, BBP surrogate m1 x1 + sqrt(1-m1^2) g_perp, and m1 x1
+Run:  python check_bulk.py [eig lam heat phase comp_x_hat]      (no argument = all)
 """
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import Two_spikes_th_lib as theory
 from spike_lib import TwoSpikes
 from Two_spikes_th_lib import TwoS_theory
 
@@ -98,7 +101,7 @@ def fig_lambda(n=2000, rho=0.3, sims=30):
     mean, std, th = [], [], []
     for lam in lams:
         a = ALPHA * lam
-        b =
+        #b =
         runs = []
         for _ in range(sims):
             S = make(n, lam, lam, rho)
@@ -176,11 +179,86 @@ def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=500, reps=3, omax=0.7):
                   loc="upper left", fontsize=7, framealpha=0.6)
         fig.tight_layout(); fig.savefig(f"phase_rho={rho}.png", dpi=120); plt.close(fig)
 
+# ---------------------------------------------------------------- figures
+
+def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
+    """One draw: top eigenvalue of A = Y2 - I + 2 mu F1(x) for the three choices of x
+    (true x_hat, BBP surrogate, m1 x1). All three use the same Y2."""
+    S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=ALPHA)
+    with np.errstate(invalid="ignore"):          # np.where evaluates sqrt(<0) for lam1<1 (result is 0 anyway)
+        m1 = float(theory.overlap_Y_P(lam1))    # BBP overlap of top eigvec of Y1 with x1
+    x1 = S.get_x1()
+    g = np.random.normal(0, 1, n)
+    g_perp = g - (g @ x1) * x1                  # project out x1
+    g_perp /= np.linalg.norm(g_perp)
+    _, xhat = S.top_eigenvector(S.Y1)           # exact top eigvec of Y1 (eigh). NB S.compute_theta1()
+                                                # (50 power iterations) is not converged for lam1 < ~1.3
+    xs = [xhat,                                          # le vrai x_hat
+          m1 * x1 + np.sqrt(1 - m1**2) * g_perp,         # x_hat BBP (proj + g)
+          m1 * x1]                                       # m1 x1 (norm m1, not 1)
+    return [np.linalg.eigvalsh(S.A(x, mu))[-1] for x in xs]
+
+
+def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26):
+    """Top eigenvalue of A = Y2 - I + 2 mu F1(x) for three choices of x:
+      - the true x_hat (top eigenvector of Y1),
+      - the BBP surrogate m1 x1 + sqrt(1 - m1^2) g_perp  (g_perp random, orthogonal to x1),
+      - m1 x1 alone.
+    Left: vs rho (lam1 fixed). Right: vs lam1 (rho fixed).
+    Points: mean over `sims` draws; error bars: standard error of the mean (std / sqrt(sims)).
+    Dashed: theory, theta + 1/theta - 1 with theta = theory.beta_value(mu, lam1, m1, lam2, rho).
+
+    g_perp only needs to be orthogonal to x1: the noise part of the true x_hat comes from Z1,
+    which is independent of x2. (Projecting out x2 as well made X^T X singular at rho = 1.)
+    """
+    sweeps = {"rho": np.linspace(0, 1, n_pts), "lam1": np.linspace(0.5, 4, n_pts)}
+    base = dict(lam1=lam1, rho=rho)
+    xlabels = {"rho": r"$\rho$", "lam1": r"$\lambda_1$"}
+    fixed = {"rho": rf"$\lambda_1$={lam1}", "lam1": rf"$\rho$={rho}"}
+    labels = [r"true $\hat x$ (top eigvec of $Y_1$)",
+              r"$m_1 x_1 + \sqrt{1-m_1^2}\, g_\perp$",
+              r"$m_1 x_1$"]
+    colors = ["C0", "C2", "C3"]
+
+    out = {}
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
+    for ax, (name, grid) in zip(axes, sweeps.items()):
+        res = np.zeros((len(grid), sims, 3))    # (grid point, simulation, which x)
+        for i, val in enumerate(grid):
+            p = dict(base); p[name] = val
+            for s in range(sims):
+                res[i, s] = _comp_x_hat_draw(n, p["lam1"], lam2, p["rho"], mu)
+        mean, sem = res.mean(1), res.std(1) / np.sqrt(sims)
+        out[name] = (grid, mean, sem)
+        for k in range(3):
+            ax.errorbar(grid, mean[:, k], sem[:, k], color=colors[k], capsize=2, lw=1.2, label=labels[k])
+        # theory: theta = top eigenvalue of beta, mapped through BBP: theta + 1/theta - 1
+        fine = np.linspace(grid[0], grid[-1], 300)
+        pred = []
+        for val in fine:
+            p = dict(base); p[name] = val
+            with np.errstate(invalid="ignore"):
+                m1 = float(theory.overlap_Y_P(p["lam1"]))
+            th = theory.beta_value(mu, p["lam1"], m1, lam2, p["rho"])
+            pred.append(th + 1 / th - 1 if th > 1 else 1.0)
+        ax.plot(fine, pred, "k--", lw=1.5,
+                label=r"theory: $\theta + 1/\theta - 1$, $\theta = \theta_{\max}(\beta)$")
+        if name == "lam1":
+            ax.axvline(1, color="red", ls=":", label=r"BBP threshold $\lambda_1=1$")
+        ax.set_xlabel(xlabels[name])
+        ax.set_ylabel(r"top eigenvalue of $A$")
+        ax.set_title(rf"{fixed[name]}, $\lambda_2$={lam2}, $\mu$={mu}, $n$={n}")
+        ax.grid(); ax.legend(fontsize=8)
+    fig.suptitle(f"all the x and theory over {sims} simulations")
+    fig.tight_layout(); fig.savefig("comp_x_hat.png", dpi=120)
+    return out
+
 
 if __name__ == "__main__":
-    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase"]
+    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase", "comp_x_hat"]
     if "eig" in todo: fig_eig()
     if "lam" in todo: fig_lambda()
     if "heat" in todo: fig_heat()
     if "phase" in todo: fig_phase()
+    if "comp_x_hat" in todo: fig_comp_x_hat()
     plt.show()
