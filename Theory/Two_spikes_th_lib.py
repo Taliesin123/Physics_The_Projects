@@ -57,6 +57,8 @@ class TwoS_theory:
         G = np.random.normal(0, 1, (n, n))
         return (G + G.T) / np.sqrt(2 * n)
 
+# ALL BELLOW THAT IS IN SOURCE_TWOSPIKE.PY
+
 
 #### Theory formulas or class
 def eigval_P(a,b,rho):
@@ -80,13 +82,14 @@ def eigvect_P(a,b,x1,x2,rho):
 
     return vp, vm
 
+#
 def eigval_Y(a,b,rho, c=0):
     """ Top eig of Y from BBP """
     th= eigval_P(a,b,rho)
     return [theta + 1/np.maximum(theta, 1e-12) +c if theta > 1 else 2
         for theta in th]
 
-
+#
 def overlap_Y_P(theta):
     theta = np.asarray(theta)
     return np.where(
@@ -95,8 +98,8 @@ def overlap_Y_P(theta):
         0
     )
 
+#
 def overlap_naive_signal(theta, rho, a, b):
-    
     r = rho*a /(theta - a)
     N = np.sqrt(r**2 + 2*rho *r + 1)
     c1 = r/N
@@ -105,7 +108,7 @@ def overlap_naive_signal(theta, rho, a, b):
     o2 = ov*theta*abs(2)/b
     return o1, o2
 
-
+#
 def beta_value(mu, lambda1, m1, lambda2, rho):  # builds the beta matrix, diagonalizes it, returns the top eigenvalue
     """Top eigenvalue of the 3x3 matrix beta.
 
@@ -133,7 +136,7 @@ def beta_value(mu, lambda1, m1, lambda2, rho):  # builds the beta matrix, diagon
     ])
     return np.linalg.eigvalsh(beta)[-1]
 
-
+#
 def semi_circle(z): #takes an array of values, return the semi circle for those values
     z = np.asarray(z)
     result = np.zeros_like(z, dtype=float)

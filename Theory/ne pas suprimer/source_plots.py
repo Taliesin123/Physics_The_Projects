@@ -1,218 +1,16 @@
 import numpy as np
-import matplotlib as plt
-from scipy.optimize import brentq
-# ----------------------------------------------------------------------
-# Two-spike model + estimators
-# ----------------------------------------------------------------------
-class TwoSpikes:
-    def __init__(self, N, lam1, lam2, rho, mu=1.0, alpha=np.sqrt(0.5)):
-        self.N = N
-        self.lam1 = lam1
-        self.lam2 = lam2
-        self.rho = rho
-        self.alpha = alpha
-        self.mu = mu        #methode A et B
-
-        #analyse theorique
-        self.a = alpha * lam1
-        self.b = np.sqrt(1 - alpha ** 2) * lam2
-
-        #signals and observations
-        self.Y1, self.Y2, self.x1, self.x2 = self.two_correlated_spikes()
-
-        #estimatords: ("1": fisrt step methode A and B (topeig of Y1))
-        self.theta = {"1": None, "naive": None, "A": None, "B": None}
-
-        #noisless signal P
-        self.P = self.alpha *self.lam1 * np.outer(self.x1, self.x1) + np.sqrt(1 - self.alpha ** 2) *self.lam2 * np.outer(self.x2, self.x2)
-
-        # observation naive
-        self.naive_matrix = (
-            self.alpha * self.Y1 + np.sqrt(1 - self.alpha ** 2) * self.Y2
-        )
-
-    ### generative function 
-    def two_correlated_spikes(self):
-        "corraleted signals xi and observations Yi"
-        cov = [[1, self.rho], [self.rho, 1]]
-        X = np.random.multivariate_normal([0, 0], cov, self.N)
-        x1 = X[:, 0]
-        x2 = X[:, 1]
-        x1 = x1 / np.linalg.norm(x1)
-        x2 = x2 / np.linalg.norm(x2)
-        Y1 = self.lam1 * np.outer(x1, x1) + self.symmetric_gaussian_matrix()
-        Y2 = self.lam2 * np.outer(x2, x2) + self.symmetric_gaussian_matrix()
-        return Y1, Y2, x1, x2
-
-    def symmetric_gaussian_matrix(self):
-        "GOE(N)"
-        n = self.N
-        G = np.random.normal(0, 1, (n, n))
-        return (G + G.T) / np.sqrt(2 * n)
-
-
-    ### get
-    def get_theta(self, method):
-        return self.theta[method]
-
-    def get_x1(self):
-        return self.x1
-
-    def get_x2(self):
-            return self.x2
-
-    def set_mu(self, mu):
-        self.mu = mu
-        return self.mu
-
-    def get_P(self):
-        return self.P
-
-
-    
-    ### compute methods (called function in here are at the bottom of the class)
-    def compute_method(self, method):
-            """Compute any subset of {"1", "naive", "A", "B"}."""
-            if "1" in method:
-                self.compute_theta1()
-            if "naive" in method:
-                self.compute_naive()
-            if "A" in method:
-                self.compute_methodA()
-            if "B" in method:
-                self.compute_methodB()
-    
-    
-    
-
-    ### static methods: on peut appeler meme sans crée une instance de la class
-    @staticmethod
-    def power_iteration(M, iterations=50, tol=1e-7):
-        N = M.shape[0]
-        x_hat = np.ones(N)
-        for _ in range(iterations):
-            x_new = M @ x_hat
-            x_new /= np.linalg.norm(x_new)
-            if np.linalg.norm(x_new - x_hat) < tol:
-                break
-            x_hat = x_new
-        return x_hat
-
-    @staticmethod
-    def top_eigenvector(M):
-        eval, evecs = np.linalg.eigh(M)            # ascending eigenvalues
-        return eval[-1], evecs[:, -1]
-
-    
-
-    
-    ### Evaluation of estimators 
-    def overlaps(self, method):
-        """Absolute overlaps |theta . x1| and |theta . x2|."""
-        theta = self.theta[method]
-        nrm = np.linalg.norm(theta)
-        if nrm > 0:
-            theta = theta / nrm          
-        overlap1 = abs(np.dot(theta, self.x1))
-        overlap2 = abs(np.dot(theta, self.x2))
-        return overlap1, overlap2
-
-    def Loss_eval(self, method):
-        """sum of the overlaps: L = - (m1 + m2)"""
-        o1, o2 = self.overlaps(method)
-        return -(o1 + o2)
-
-    def Loss_eval_2(self, method):
-        """misspecified loss : L_MS = alpha ||Y1 - theta*theta^T||^2 + sqrt(1-alpha^2) ||Y2 - theta*theta^T||^2
-        """
-        theta = self.theta[method]
-        L = (self.alpha * np.linalg.norm(self.Y1 - np.outer(theta, theta), 'fro') ** 2
-             + np.sqrt(1 - self.alpha ** 2)
-             * np.linalg.norm(self.Y2 - np.outer(theta, theta), 'fro') ** 2)
-        return L
 
 
 
+def semi_circle(z): #takes an array of values, return the semi circle for those values
+    z = np.asarray(z)
+    result = np.zeros_like(z, dtype=float)
 
+    mask = np.abs(z) < 2 - 1e-12
+    result[mask] = np.sqrt(4 - z[mask]**2) / (2 * np.pi) 
 
+    return result
 
-    #### functions used to compute the methods
-    def fisher_MS(self, x, lam):
-        """Fisher information matrix F(x) used for the regularizer."""
-        N = self.N
-        return ((lam - 1) ** 2 + 1.0 / N) * np.outer(x, x) + np.eye(N) / N
-
-    def Hess(self, theta):
-        """Theoretical Hessian of the Method-A objective at ``theta``."""
-        return self.Y2 - np.eye(self.N) + 2 * self.mu * self.fisher_MS(theta, self.lam1)
-
-    # ----- estimators -------------------------------------------------
-    def compute_theta1(self):
-        """Step-1 estimate of x1 from Y1 (top eigenvector)."""
-        self.theta["1"] = self.power_iteration(self.Y1)
-        return self.theta["1"]
-
-    def compute_naive(self):
-        # Naive spectral baseline: top eigenvector of a fixed blend of Y1, Y2
-        # (independent of mu). Use the algebraically-largest eigenvector so it
-        # tracks the signal rather than the larger-magnitude noise edge.
-        _, self.theta["naive"] = self.top_eigenvector(self.naive_matrix)
-        return self.theta["naive"]
-
-    def A(self,x1,mu):
-        F1 = self.fisher_MS(x1, self.lam1)
-        N = self.N
-        A = self.Y2 - np.eye(N) + 2 * mu * F1
-        return A
-    
-    def x_fisher(self, method, solve=True):
-        """Compute the Fisher-regularized estimators.
-
-        Returns (thetaA, thetaB); the requested ones are filled, the others
-        are left as zeros.
-        """
-        mu = self.mu
-        N = self.N
-
-        self.compute_theta1()
-        
-        A = self.A(self.theta["1"], mu)
-        thetaA = np.zeros(N)
-        thetaB = np.zeros(N)
-
-        if "A" in method:
-            # Method A: algebraically-largest eigenvector of A (the signal
-            # spike). power_iteration would grab the larger-magnitude noise
-            # edge at small mu, so use eigh-based top_eigenvector instead.
-            _ , thetaA = self.top_eigenvector(A)
-
-        if "B" in method:
-            # Method B: norm-constrained solve (A - lam*I) theta = b
-            b = 2 * mu * F1 @ self.theta["1"]
-          
-            thetaB, _ = solve_norm_constrained(A, b)
-            # else:
-            #     # direct (un-constrained) fallback; kept for reference
-            #     if np.linalg.cond(A) < 1e12:
-            #         thetaB = np.linalg.inv(A - np.eye(N)) @ b
-            #     else:
-            #         raise np.linalg.LinAlgError(
-            #             f"A nearly singular (cond={np.linalg.cond(A):.2e})"
-            #         )
-
-        return thetaA, thetaB
-
-    def compute_methodA(self):
-        self.theta["A"], _ = self.x_fisher(method="A", solve=True)
-        return self.theta["A"]
-
-    def compute_methodB(self):
-        _, self.theta["B"] = self.x_fisher(method="B", solve=True)
-        return self.theta["B"]
-
-
-
-#### Comparison methodes for variable parameters 
 def comparison1D(vary_param, values, N, lambda1, lambda2, rho, mu,
                  M=20, method=("A", "B"), optimal_mu=False):
     """Sweep one parameter and measure the recovery quality of each method.
@@ -418,9 +216,6 @@ def plot_comparison2D(result, vary_param1, vary_param2, method=("A", "B"),
     return figs
 
 
-
-
-### Cross val on mu
 def cv_mu(MU, N, rho, lambda1, lambda2, M=10, method="A"):
     """Pick mu minimizing the mean recovery loss over M resamples.
 
@@ -561,4 +356,10 @@ def solve_norm_constrained(A, b, tol=1e-12):
                  xtol=tol, rtol=1e-14, maxiter=200)
     theta = evecs @ (c / (lam - evals))         # = (lam*I - A)^{-1} b
     return theta / np.linalg.norm(theta), lam
+
+
+
+
+
+
 
