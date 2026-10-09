@@ -1,10 +1,11 @@
-# Environnement virtuel
-venv/
+# folders
+results/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+.ipynb_checkpoints/
+.venv/
 
-# Ignore les résultats
-Results/.DS_Store
+# extensions
+*.pyc
+
+# files
 .DS_Store

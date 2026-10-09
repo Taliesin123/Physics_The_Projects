@@ -1,29 +1,16 @@
-"""WITH the noise bulk: Y = P + W, W Wigner.
-
-Theory (report, eq. bbp): outliers of Y sit at theta + 1/theta when theta > 1 (else at the
-bulk edge 2); the top eigenvector x_hat of Y overlaps the eigenvector v_+ of P with
-sqrt(1 - theta_+^-2), hence  |<x_hat, x_i>| -> sqrt(1 - theta_+^-2) |<v_+, x_i>|.
-
-Figures (saved next to this file):
-  eig   : eigenvalues_Y.png       top-2 eigenvalues of Y vs a, b, rho (+ bulk edge)
-  lam   : overlaps_vs_lambda.png  |<u_pm, v_pm>| vs lambda (lambda1 = lambda2 = lambda)
-  heat  : heat_lambda1_rho.png    |<x_hat,x1>|, |<x_hat,x2>| vs (lambda1, rho), lambda2 fixed
-          heat_a_rho.png          same vs (a, rho), b fixed
-  phase : phase_rho=*.png         RGB phase diagrams in the (a, b) plane, one per rho
-  comp_x_hat : comp_x_hat.png  top eigenvalue of A = Y2 - I + 2 mu F1(x) vs rho and vs lambda1, for
-          x = true x_hat, BBP surrogate m1 x1 + sqrt(1-m1^2) g_perp, and m1 x1
-Run:  python check_bulk.py [eig lam heat phase comp_x_hat]      (no argument = all)
-"""
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import Two_spikes_th_lib as theory
+import two_spikes_th_lib as theory
 from spike_lib import TwoSpikes
-from Two_spikes_th_lib import TwoS_theory
+from two_spikes_th_lib import TwoS_theory
+import os
 
     
 ALPHA = np.sqrt(0.5)
+DIR_PLOTS = "results"       # la ou on envoie nos plots (quel folder)
+os.makedirs(DIR_PLOTS, exist_ok=True)
 
 
 
@@ -80,7 +67,7 @@ def fig_eig(n=500, sims=30):
         others = ", ".join(f"{k}={v}" for k, v in base.items() if k != name)
         ax.set_xlabel(name); ax.set_ylabel("eigenvalue of Y"); ax.set_title(f"n={n}, {sims} sims, {others}")
         ax.grid(); ax.legend(fontsize=8)
-    fig.tight_layout(); fig.savefig("eigenvalues_Y.png", dpi=120)
+    fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, "eigenvalues_Y.png"), dpi=120)
 
 
 #### a refaire 
@@ -250,7 +237,7 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
         ax.set_title(rf"{fixed[name]}, $\lambda_2$={lam2}, $\mu$={mu}, $n$={n}")
         ax.grid(); ax.legend(fontsize=8)
     fig.suptitle(f"all the x and theory over {sims} simulations")
-    fig.tight_layout(); fig.savefig("comp_x_hat.png", dpi=120)
+    fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, "comp_x_hat.png"), dpi=120)
     return out
 
 

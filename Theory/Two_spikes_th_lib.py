@@ -106,7 +106,7 @@ def overlap_naive_signal(theta, rho, a, b):
     return o1, o2
 
 
-def beta_value(mu, lambda1, m1, lambda2, rho):
+def beta_value(mu, lambda1, m1, lambda2, rho):  # builds the beta matrix, diagonalizes it, returns the top eigenvalue
     """Top eigenvalue of the 3x3 matrix beta.
 
     beta is the low-rank part of A = Y2 - I + 2 mu F1(x),  x = m1 x1 + sqrt(1 - m1^2) g_perp,
@@ -120,7 +120,7 @@ def beta_value(mu, lambda1, m1, lambda2, rho):
         beta13 = beta31 = 2 mu (lambda1-1)^2 m1 sqrt(1 - m1^2)
         beta23 = beta32 = 0
 
-    NB: the top eigenvalue of A itself is then (BBP) theta + 1/theta - 1 if theta > 1,
+    Note: the top eigenvalue of A itself is then (BBP) theta + 1/theta - 1 if theta > 1,
     else the bulk edge 2 - 1 = 1, with theta = beta_value(...).
     """
     c = 2 * mu * (lambda1 - 1) ** 2
@@ -134,7 +134,7 @@ def beta_value(mu, lambda1, m1, lambda2, rho):
     return np.linalg.eigvalsh(beta)[-1]
 
 
-def semi_circle(z):
+def semi_circle(z): #takes an array of values, return the semi circle for those values
     z = np.asarray(z)
     result = np.zeros_like(z, dtype=float)
 

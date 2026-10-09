@@ -1,4 +1,4 @@
-# Physics_The_Projects
+#### Physics_The_Projects
 
 Semester project on spiked random matrix models (BBP transition, two correlated
 spikes) and Fisher/EWC-based analysis. Continued in semester 2.
@@ -7,7 +7,19 @@ Authors: Taliesin Perez, Celia Budelot.
 
 ---
 
-## Repository layout
+#### Repository layout
+
+### `Theory/`
+Theoretical notes and derivations, plots, and other materials.
+
+## 'results/'
+Contains all the plots.
+
+## 'Report/'
+Contains an earlier version of the latex report.
+
+Files:
+check_bulk.py
 
 ### `Spike_code/`
 Core modules and notebooks.
@@ -33,5 +45,3 @@ Some plots.
 ### `spike_fisher/`
 Some code.
 
-### `Theory/`
-Theoretical notes and derivations, plots, and other materials.
