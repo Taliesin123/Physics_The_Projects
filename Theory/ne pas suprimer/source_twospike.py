@@ -75,3 +75,10 @@ def beta_value(mu, lambda1, m1, lambda2, rho):  # builds the beta matrix, diagon
 
 def overlap(x1, x2):
     return abs(np.dot(x1, x2))
+
+def m1_theory(lam1):
+    """BBP overlap between x1 and the top eigenvector of Y1: sqrt(1 - 1/lam1^2) if lam1 > 1, else 0."""
+    if lam1 > 1:
+        return np.sqrt(1 - 1 / lam1 ** 2)
+    else:
+        return 0.0
