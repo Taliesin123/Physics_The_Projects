@@ -1,4 +1,5 @@
 import numpy as np
+from class_twospike import TwoSpikes
 
 def semi_circle(z): #takes an array of values, return the semi circle for those values
     z = np.asarray(z)
@@ -356,8 +357,69 @@ def solve_norm_constrained(A, b, tol=1e-12):
     return theta / np.linalg.norm(theta), lam
 
 
+# ---------------------------------------------------------------- overlap of x1 with the top eigenvector of A
+# used by overlap_x1_vs_n, overlap_x1_vs_rho, overlap_x1_vs_lam1 in plot_maker_tali.py
+
+def m1_theory(lam1):
+    """BBP overlap between x1 and the top eigenvector of Y1: sqrt(1 - 1/lam1^2) if lam1 > 1, else 0."""
+    if lam1 > 1:
+        return np.sqrt(1 - 1 / lam1 ** 2)
+    else:
+        return 0.0
 
 
+def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
+    """One draw. Builds A = Y2 - I + 2 mu F1(x) for the three choices of x
+         1) the true x_hat (top eigenvector of Y1)
+         2) the BBP surrogate m1 x1 + sqrt(1 - m1^2) g_perp
+         3) m1 x1
+    and returns |<x1, v>| for each of them, v = top eigenvector of A.
+    All three use the same Y1, Y2."""
+    S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=alpha)
+    x1 = S.get_x1()
+    m1 = m1_theory(lam1)
+
+    # random unit vector orthogonal to x1
+    g = np.random.normal(0, 1, n)
+    g_perp = g - (g @ x1) * x1
+    g_perp = g_perp / np.linalg.norm(g_perp)
+
+    # the three choices of x
+    _, x_hat = S.top_eigenvector(S.Y1)
+    x_bbp = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp
+    x_m1x1 = m1 * x1
+
+    # top eigenvector of A for each x (eigh sorts eigenvalues ascending, so the last column is the top one)
+    _, V = np.linalg.eigh(S.A(x_hat, mu))
+    overlap_xhat = abs(np.dot(x1, V[:, -1]))
+
+    _, V = np.linalg.eigh(S.A(x_bbp, mu))
+    overlap_bbp = abs(np.dot(x1, V[:, -1]))
+
+    _, V = np.linalg.eigh(S.A(x_m1x1, mu))
+    overlap_m1x1 = abs(np.dot(x1, V[:, -1]))
+
+    return overlap_xhat, overlap_bbp, overlap_m1x1
 
 
-
+def overlap_A_theory(lam1, lam2, rho, mu):
+    """Theoretical |<x1, v>|, v = top eigenvector of A, for x = x_hat or the BBP surrogate.
+    beta is the same 3x3 matrix as in source_twospike.beta_value, in the basis
+    (x1, (x2 - rho x1)/sqrt(1-rho^2), g_perp). With theta, u its top eigenvalue / eigenvector,
+    BBP gives |<x1, v>| = sqrt(1 - 1/theta^2) * |u[0]| if theta > 1, else 0."""
+    m1 = m1_theory(lam1)
+    c = 2 * mu * (lam1 - 1) ** 2
+    s_rho = np.sqrt(max(0.0, 1 - rho ** 2))
+    s_m = np.sqrt(max(0.0, 1 - m1 ** 2))
+    beta = np.array([
+        [c * m1 ** 2 + lam2 * rho ** 2, lam2 * rho * s_rho,    c * m1 * s_m],
+        [lam2 * rho * s_rho,            lam2 * (1 - rho ** 2), 0.0],
+        [c * m1 * s_m,                  0.0,                   c * (1 - m1 ** 2)],
+    ])
+    w, U = np.linalg.eigh(beta)
+    theta = w[-1]
+    u = U[:, -1]
+    if theta > 1:
+        return np.sqrt(1 - 1 / theta ** 2) * abs(u[0])
+    else:
+        return 0.0

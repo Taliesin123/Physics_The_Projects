@@ -5,6 +5,7 @@ import matplotlib.patches as mpatches
 from class_twospike import TwoSpikes
 import os
 import source_twospike as sts
+import source_plots as sp
 
     
 ALPHA = np.sqrt(0.5)
@@ -185,40 +186,128 @@ def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
           x1]
     return xs
 
-# PLOT DE L'OVERLAP ENTRE NOTRE SIGNAL ET NOS DIFFERENTS ESTIMATEURS EN FONCTION DE N
-def overlap_x_1_with_estimators(lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50):
-    avg1 = []
-    std1 = []
-    avg2 = []
-    std2 = []
-    avg3 = []
-    std3 = []
+# PLOTS DE L'OVERLAP ENTRE x1 ET LE TOP EIGENVECTOR DE A = Y2 - I + 2 mu F1(x), POUR LES 3 CHOIX DE x
+# (x_hat, BBP surrogate, m1 x1). Les fonctions de calcul sont dans source_plots.py
+
+def overlap_x1_vs_n(lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=20):
     n_values = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000]
+
+    mean_xhat, err_xhat = [], []
+    mean_bbp, err_bbp = [], []
+    mean_m1x1, err_m1x1 = [], []
+
     for n in n_values:
-        values1 = []
-        values2 = []
-        values3 = []
-        for i in range(sims):
-            xhat, xbbp, m1x1, x1 = _comp_x_hat_draw(n, lam1, lam2, rho, mu)
-            values1.append(sts.overlap(x1, xhat))
-            values2.append(sts.overlap(x1, xbbp))
-            values3.append(sts.overlap(x1, m1x1))
-        avg1.append(np.mean(values1))
-        std1.append(np.std(values1))
-        avg2.append(np.mean(values2))
-        std2.append(np.std(values2))
-        avg3.append(np.mean(values3))
-        std3.append(np.std(values3))
-    plt.errorbar(n_values, avg1, std1, label = "x_hat_le_vrai")
-    plt.legend()
-    plt.show()
-    plt.errorbar(n_values, avg2, std2, label = "x_hat_BBP_proj + g")
-    plt.legend()
-    plt.show()
-    plt.errorbar(n_values, avg3, std3, label = "m_1 * x_1")
-    plt.legend()
-    plt.show()
-    return None
+        list_xhat, list_bbp, list_m1x1 = [], [], []
+        for s in range(sims):
+            o_xhat, o_bbp, o_m1x1 = sp.overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=ALPHA)
+            list_xhat.append(o_xhat)
+            list_bbp.append(o_bbp)
+            list_m1x1.append(o_m1x1)
+        mean_xhat.append(np.mean(list_xhat))
+        err_xhat.append(np.std(list_xhat) / np.sqrt(sims))
+        mean_bbp.append(np.mean(list_bbp))
+        err_bbp.append(np.std(list_bbp) / np.sqrt(sims))
+        mean_m1x1.append(np.mean(list_m1x1))
+        err_m1x1.append(np.std(list_m1x1) / np.sqrt(sims))
+
+    theory = sp.overlap_A_theory(lam1, lam2, rho, mu)     # does not depend on n
+
+    plt.figure(figsize=(7, 4.8))
+    plt.errorbar(n_values, mean_xhat, err_xhat, color="C0", marker="o", ms=3, capsize=2, label=r"true $\hat x$")
+    plt.errorbar(n_values, mean_bbp, err_bbp, color="C2", marker="o", ms=3, capsize=2, label=r"$m_1 x_1 + \sqrt{1-m_1^2}\, g_\perp$")
+    plt.errorbar(n_values, mean_m1x1, err_m1x1, color="C3", marker="o", ms=3, capsize=2, label=r"$m_1 x_1$")
+    plt.axhline(theory, color="k", ls="--", label=r"theory ($\hat x$ / BBP surrogate)")
+    plt.xlabel(r"$n$")
+    plt.ylabel(r"$|\langle x_1, v\rangle|$, $v$ = top eigvec of $A$")
+    plt.title(rf"$\lambda_1$={lam1}, $\rho$={rho}, $\lambda_2$={lam2}, $\mu$={mu}, {sims} sims")
+    plt.grid()
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(os.path.join(DIR_PLOTS, "overlap_x1_vs_n.png"), dpi=120)
+    plt.close()
+
+
+def overlap_x1_vs_rho(n=500, lam1=2.0, lam2=3.0, mu=0.5, sims=20):
+    rho_values = np.linspace(0, 1, 21)
+
+    mean_xhat, err_xhat = [], []
+    mean_bbp, err_bbp = [], []
+    mean_m1x1, err_m1x1 = [], []
+
+    for rho in rho_values:
+        list_xhat, list_bbp, list_m1x1 = [], [], []
+        for s in range(sims):
+            o_xhat, o_bbp, o_m1x1 = sp.overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=ALPHA)
+            list_xhat.append(o_xhat)
+            list_bbp.append(o_bbp)
+            list_m1x1.append(o_m1x1)
+        mean_xhat.append(np.mean(list_xhat))
+        err_xhat.append(np.std(list_xhat) / np.sqrt(sims))
+        mean_bbp.append(np.mean(list_bbp))
+        err_bbp.append(np.std(list_bbp) / np.sqrt(sims))
+        mean_m1x1.append(np.mean(list_m1x1))
+        err_m1x1.append(np.std(list_m1x1) / np.sqrt(sims))
+
+    rho_fine = np.linspace(0, 1, 300)
+    theory = []
+    for rho in rho_fine:
+        theory.append(sp.overlap_A_theory(lam1, lam2, rho, mu))
+
+    plt.figure(figsize=(7, 4.8))
+    plt.errorbar(rho_values, mean_xhat, err_xhat, color="C0", marker="o", ms=3, capsize=2, label=r"true $\hat x$")
+    plt.errorbar(rho_values, mean_bbp, err_bbp, color="C2", marker="o", ms=3, capsize=2, label=r"$m_1 x_1 + \sqrt{1-m_1^2}\, g_\perp$")
+    plt.errorbar(rho_values, mean_m1x1, err_m1x1, color="C3", marker="o", ms=3, capsize=2, label=r"$m_1 x_1$")
+    plt.plot(rho_fine, theory, "k--", label=r"theory ($\hat x$ / BBP surrogate)")
+    plt.xlabel(r"$\rho$")
+    plt.ylabel(r"$|\langle x_1, v\rangle|$, $v$ = top eigvec of $A$")
+    plt.title(rf"$\lambda_1$={lam1}, $n$={n}, $\lambda_2$={lam2}, $\mu$={mu}, {sims} sims")
+    plt.grid()
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(os.path.join(DIR_PLOTS, "overlap_x1_vs_rho.png"), dpi=120)
+    plt.close()
+
+
+def overlap_x1_vs_lam1(n=500, lam2=3.0, mu=0.5, rho=0.5, sims=20):
+    lam1_values = np.linspace(0.5, 4, 21)
+
+    mean_xhat, err_xhat = [], []
+    mean_bbp, err_bbp = [], []
+    mean_m1x1, err_m1x1 = [], []
+
+    for lam1 in lam1_values:
+        list_xhat, list_bbp, list_m1x1 = [], [], []
+        for s in range(sims):
+            o_xhat, o_bbp, o_m1x1 = sp.overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=ALPHA)
+            list_xhat.append(o_xhat)
+            list_bbp.append(o_bbp)
+            list_m1x1.append(o_m1x1)
+        mean_xhat.append(np.mean(list_xhat))
+        err_xhat.append(np.std(list_xhat) / np.sqrt(sims))
+        mean_bbp.append(np.mean(list_bbp))
+        err_bbp.append(np.std(list_bbp) / np.sqrt(sims))
+        mean_m1x1.append(np.mean(list_m1x1))
+        err_m1x1.append(np.std(list_m1x1) / np.sqrt(sims))
+
+    lam1_fine = np.linspace(0.5, 4, 300)
+    theory = []
+    for lam1 in lam1_fine:
+        theory.append(sp.overlap_A_theory(lam1, lam2, rho, mu))
+
+    plt.figure(figsize=(7, 4.8))
+    plt.errorbar(lam1_values, mean_xhat, err_xhat, color="C0", marker="o", ms=3, capsize=2, label=r"true $\hat x$")
+    plt.errorbar(lam1_values, mean_bbp, err_bbp, color="C2", marker="o", ms=3, capsize=2, label=r"$m_1 x_1 + \sqrt{1-m_1^2}\, g_\perp$")
+    plt.errorbar(lam1_values, mean_m1x1, err_m1x1, color="C3", marker="o", ms=3, capsize=2, label=r"$m_1 x_1$")
+    plt.plot(lam1_fine, theory, "k--", label=r"theory ($\hat x$ / BBP surrogate)")
+    plt.axvline(1, color="red", ls=":", label=r"BBP threshold $\lambda_1=1$")
+    plt.xlabel(r"$\lambda_1$")
+    plt.ylabel(r"$|\langle x_1, v\rangle|$, $v$ = top eigvec of $A$")
+    plt.title(rf"$\rho$={rho}, $n$={n}, $\lambda_2$={lam2}, $\mu$={mu}, {sims} sims")
+    plt.grid()
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(os.path.join(DIR_PLOTS, "overlap_x1_vs_lam1.png"), dpi=120)
+    plt.close()
 
 def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26):
     """Top eigenvalue of A = Y2 - I + 2 mu F1(x) for three choices of x:
@@ -290,11 +379,13 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
 
 
 if __name__ == "__main__":
-    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase", "comp_x_hat", "overlap_x_1_with_estimators"]
+    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase", "comp_x_hat", "overlap_n", "overlap_rho", "overlap_lam1"]
     if "eig" in todo: fig_eig()
     if "lam" in todo: fig_lambda()
     if "heat" in todo: fig_heat()
     if "phase" in todo: fig_phase()
     if "comp_x_hat" in todo: fig_comp_x_hat()
-    if "overlap_x_1_with_estimators" in todo: overlap_x_1_with_estimators()
+    if "overlap_n" in todo: overlap_x1_vs_n()
+    if "overlap_rho" in todo: overlap_x1_vs_rho()
+    if "overlap_lam1" in todo: overlap_x1_vs_lam1()
     plt.show()
