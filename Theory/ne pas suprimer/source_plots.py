@@ -240,17 +240,20 @@ def plot_comparison2D(result, vary_param1, vary_param2, method=("A", "B"),
 
 # ---------------------------------------------------------------- the three choices of x in A = Y2 - I + 2 mu F1(x)
 # overlaps_A_one_draw: used by overlap_x1_vs_n, overlap_x1_vs_rho, overlap_x1_vs_lam1 in plot_maker_tali.py
+# overlaps_xhat_one_draw: used by overlap_xhat_vs_n, overlap_xhat_vs_rho, overlap_xhat_vs_lam1 in plot_maker_tali.py
 # top_eig_A_one_draw:  used by fig_comp_x_hat in plot_maker_tali.py
 
 def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
-    """One draw. Builds A = Y2 - I + 2 mu F1(x) for the three choices of x
+    """One draw. Builds A = Y2 - I + 2 mu F1(x) for the four choices of x
          1) the true x_hat (top eigenvector of Y1)
-         2) the BBP surrogate m1 x1 + sqrt(1 - m1^2) g_perp
-         3) m1 x1
+         2) x_pg1  = m1 x1 + sqrt(1 - m1^2) g_perp    (g_perp orthogonal to x1)
+         3) x_m1   = m1 x1
+         4) x_pg12 = m1 x1 + sqrt(1 - m1^2) g_perp12  (g_perp12 orthogonal to x1 and x2)
     and returns |<x1, v>| for each of them, v = top eigenvector of A.
-    All three use the same Y1, Y2."""
+    All four use the same Y1, Y2."""
     S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=alpha)
     x1 = S.get_x1()
+    x2 = S.get_x2()
     m1 = sts.m1_theory(lam1)
 
     # random unit vector orthogonal to x1
@@ -258,10 +261,19 @@ def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     g_perp = g - (g @ x1) * x1
     g_perp = g_perp / np.linalg.norm(g_perp)
 
-    # the three choices of x
+    # random unit vector orthogonal to x1 and x2 (Gram-Schmidt)
+    e2 = x2 - (x2 @ x1) * x1                  # part of x2 orthogonal to x1
+    g_perp12 = g - (g @ x1) * x1
+    if np.linalg.norm(e2) > 1e-8:             # if rho = 1, x2 = x1: nothing more to remove
+        e2 = e2 / np.linalg.norm(e2)
+        g_perp12 = g_perp12 - (g_perp12 @ e2) * e2
+    g_perp12 = g_perp12 / np.linalg.norm(g_perp12)
+
+    # the four choices of x
     _, x_hat = S.top_eigenvector(S.Y1)
-    x_bbp = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp
-    x_m1x1 = m1 * x1
+    x_bbp = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp        # x_pg1
+    x_m1x1 = m1 * x1                                       # x_m1
+    x_pg12 = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp12
 
     # top eigenvector of A for each x (eigh sorts eigenvalues ascending, so the last column is the top one)
     _, V = np.linalg.eigh(S.A(x_hat, mu))
@@ -273,7 +285,41 @@ def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     _, V = np.linalg.eigh(S.A(x_m1x1, mu))
     overlap_m1x1 = abs(np.dot(x1, V[:, -1]))
 
-    return overlap_xhat, overlap_bbp, overlap_m1x1
+    _, V = np.linalg.eigh(S.A(x_pg12, mu))
+    overlap_pg12 = abs(np.dot(x1, V[:, -1]))
+
+    return overlap_xhat, overlap_bbp, overlap_m1x1, overlap_pg12
+
+def overlaps_xhat_one_draw(n, lam1, lam2, rho, alpha=np.sqrt(0.5)):
+    """One draw. Returns |<x_hat, x_pg1>| and |<x_hat, x_pg12>|, with
+         x_hat  = top eigenvector of Y1
+         x_pg1  = m1 x1 + sqrt(1 - m1^2) g_perp    (g_perp orthogonal to x1)
+         x_pg12 = m1 x1 + sqrt(1 - m1^2) g_perp12  (g_perp12 orthogonal to x1 and x2)"""
+    S = TwoSpikes(n, lam1, lam2, rho, alpha=alpha)
+    x1 = S.get_x1()
+    x2 = S.get_x2()
+    m1 = sts.m1_theory(lam1)
+
+    # random unit vector orthogonal to x1
+    g = np.random.normal(0, 1, n)
+    g_perp = g - (g @ x1) * x1
+    g_perp = g_perp / np.linalg.norm(g_perp)
+
+    # random unit vector orthogonal to x1 and x2 (Gram-Schmidt)
+    e2 = x2 - (x2 @ x1) * x1                  # part of x2 orthogonal to x1
+    g_perp12 = g - (g @ x1) * x1
+    if np.linalg.norm(e2) > 1e-8:             # if rho = 1, x2 = x1: nothing more to remove
+        e2 = e2 / np.linalg.norm(e2)
+        g_perp12 = g_perp12 - (g_perp12 @ e2) * e2
+    g_perp12 = g_perp12 / np.linalg.norm(g_perp12)
+
+    _, x_hat = S.top_eigenvector(S.Y1)
+    x_pg1 = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp
+    x_pg12 = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp12
+
+    overlap_pg1 = abs(np.dot(x_hat, x_pg1))
+    overlap_pg12 = abs(np.dot(x_hat, x_pg12))
+    return overlap_pg1, overlap_pg12
 
 
 def top_eig_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
@@ -305,20 +351,3 @@ def top_eig_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     return top_xhat, top_bbp, top_m1x1
 
 
-def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
-    """One draw: top eigenvalue of A = Y2 - I + 2 mu F1(x) for the three choices of x
-    (true x_hat, BBP surrogate, m1 x1). All three use the same Y2."""
-    S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=np.sqrt(0.5))
-    with np.errstate(invalid="ignore"):          # np.where evaluates sqrt(<0) for lam1<1 (result is 0 anyway)
-        m1 = float(sts.overlap_Y_P(lam1))    # BBP overlap of top eigvec of Y1 with x1
-    x1 = S.get_x1()
-    g = np.random.normal(0, 1, n)
-    g_perp = g - (g @ x1) * x1                  # project out x1
-    g_perp /= np.linalg.norm(g_perp)
-    _, xhat = S.top_eigenvector(S.Y1)           # exact top eigvec of Y1 (eigh). NB S.compute_theta1()
-                                                # (50 power iterations) is not converged for lam1 < ~1.3
-    xs = [xhat,                                          # le vrai x_hat
-          m1 * x1 + np.sqrt(1 - m1**2) * g_perp,         # x_hat BBP (proj + g)
-          m1 * x1,                                        # m1 x1 (norm m1, not 1)
-          x1]
-    return xs
