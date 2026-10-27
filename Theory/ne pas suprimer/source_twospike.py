@@ -82,3 +82,36 @@ def m1_theory(lam1):
         return np.sqrt(1 - 1 / lam1 ** 2)
     else:
         return 0.0
+
+
+def semi_circle(z): #takes an array of values, return the semi circle for those values
+    z = np.asarray(z)
+    result = np.zeros_like(z, dtype=float)
+
+    mask = np.abs(z) < 2 - 1e-12
+    result[mask] = np.sqrt(4 - z[mask]**2) / (2 * np.pi) 
+
+    return result
+
+
+def overlap_A_theory(lam1, lam2, rho, mu):
+    """Theoretical |<x1, v>|, v = top eigenvector of A, for x = x_hat or the BBP surrogate.
+    beta is the same 3x3 matrix as in source_twospike.beta_value, in the basis
+    (x1, (x2 - rho x1)/sqrt(1-rho^2), g_perp). With theta, u its top eigenvalue / eigenvector,
+    BBP gives |<x1, v>| = sqrt(1 - 1/theta^2) * |u[0]| if theta > 1, else 0."""
+    m1 = m1_theory(lam1)
+    c = 2 * mu * (lam1 - 1) ** 2
+    s_rho = np.sqrt(max(0.0, 1 - rho ** 2))
+    s_m = np.sqrt(max(0.0, 1 - m1 ** 2))
+    beta = np.array([
+        [c * m1 ** 2 + lam2 * rho ** 2, lam2 * rho * s_rho,    c * m1 * s_m],
+        [lam2 * rho * s_rho,            lam2 * (1 - rho ** 2), 0.0],
+        [c * m1 * s_m,                  0.0,                   c * (1 - m1 ** 2)],
+    ])
+    w, U = np.linalg.eigh(beta)
+    theta = w[-1]
+    u = U[:, -1]
+    if theta > 1:
+        return np.sqrt(1 - 1 / theta ** 2) * abs(u[0])
+    else:
+        return 0.0

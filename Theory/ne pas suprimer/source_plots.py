@@ -1,15 +1,36 @@
 import numpy as np
-from class_twospike import TwoSpikes
+import matplotlib.pyplot as plt
+from class_twospike import TwoSpikes, cv_mu, mu_equilibrium
 import source_twospike as sts
+# Functions used while plotting (simulations, sweeps), so that the plot_maker files stay lean.
+# Theory formulas are in source_twospike.py, the class and the method solvers in class_twospike.py.
 
-def semi_circle(z): #takes an array of values, return the semi circle for those values
-    z = np.asarray(z)
-    result = np.zeros_like(z, dtype=float)
 
-    mask = np.abs(z) < 2 - 1e-12
-    result[mask] = np.sqrt(4 - z[mask]**2) / (2 * np.pi) 
+# ---------------------------------------------------------------- naive estimator (top eigvec of Y)
+# used by fig_eig, fig_lambda, heat, fig_phase in plot_maker_tali.py
 
-    return result
+def make(n, a, b, rho, alpha=np.sqrt(0.5)):
+    """TwoSpikes instance parametrised by a = alpha lam1 and b = sqrt(1 - alpha^2) lam2 (the weights in P)."""
+    return TwoSpikes(n, a / alpha, b / np.sqrt(1 - alpha**2), rho, alpha=alpha)
+
+
+def top2(Y):
+    w, V = np.linalg.eigh(Y)
+    return w[-1:-3:-1], V[:, -1:-3:-1]        # 2 largest, descending
+
+
+def sample_overlaps(n, a, b, rho, reps, alpha=np.sqrt(0.5)):
+    """Mean over reps of (|<x_hat,x1>|, |<x_hat,x2>|), x_hat = top eigenvector of Y = naive_matrix."""
+    o = np.zeros(2)
+    for _ in range(reps):
+        S = make(n, a, b, rho, alpha)
+        S.compute_naive()                    # x_hat = top eigenvector of Y = alpha Y1 + sqrt(1-alpha^2) Y2
+        o += S.overlaps("naive")
+    return o / reps
+
+
+
+# ---------------------------------------------------------------- comparison of the methods A, B, naive
 
 def comparison1D(vary_param, values, N, lambda1, lambda2, rho, mu,
                  M=20, method=("A", "B"), optimal_mu=False):
@@ -216,153 +237,10 @@ def plot_comparison2D(result, vary_param1, vary_param2, method=("A", "B"),
     return figs
 
 
-def cv_mu(MU, N, rho, lambda1, lambda2, M=10, method="A"):
-    """Pick mu minimizing the mean recovery loss over M resamples.
 
-    Returns (mu_opt, scores, scores_std).
-    """
-    scores = []
-    scores_std = []
-    for mu in MU:
-        score = []
-        for _ in range(M):
-            S = TwoSpikes(N, lambda1, lambda2, rho, mu=mu)
-            S.compute_method([method])
-            score.append(S.Loss_eval_2(method))
-        score = np.array(score)
-        scores.append(np.mean(score))
-        scores_std.append(np.std(score) / np.sqrt(M))
-    mu_opt = MU[int(np.argmin(scores))]
-    return mu_opt, np.array(scores), np.array(scores_std)
-
-
-def mu_equilibrium(lambda1, lambda2):
-    """Reference value mu_eq = lambda2 / (2 (1 - lambda1)^2)."""
-    return lambda2 / (2 * (1 - lambda1) ** 2)
-
-
-### norm contraint methode B
-def norm_constraint(lam, A, b, N):
-    """Residual ||theta(lam)|| - 1 for theta solving (A - lam*I) theta = b.
-
-    Kept for reference only. The robust solver below replaces the naive
-    ``fsolve(norm_constraint, ...)`` call, which diverged through the poles
-    of this function.
-    """
-    theta = np.linalg.solve(A - lam * np.eye(N), b)
-    return np.linalg.norm(theta) - 1.0
-
-
-def solve_norm_constrained(A, b, tol=1e-12):
-    """Solve the unit-norm-constrained stationarity equation for Method B.
-
-    Method B *maximizes* the regularized objective
-
-        f(theta) = theta^T A theta + 2 b^T theta      subject to ||theta|| = 1,
-
-    whose stationarity condition is ``(A - lam*I) theta = -b``, i.e.
-
-        theta(lam) = (lam*I - A)^{-1} b = sum_k c_k / (lam - e_k) * u_k,
-
-    with the symmetric eigendecomposition ``A = sum_k e_k u_k u_k^T`` and
-    ``c_k = u_k . b``. The squared norm
-
-        phi(lam) = ||theta(lam)||^2 = sum_k c_k^2 / (lam - e_k)^2
-
-    has a double pole at every eigenvalue of ``A``.
-
-    Which root to pick (this is the whole game)
-    -------------------------------------------
-    A constrained *maximizer* on the sphere requires the Lagrange multiplier
-    to satisfy ``lam >= e_max`` so that ``(lam*I - A)`` is positive definite
-    (the classic trust-region condition). On ``(e_max, +inf)`` the matrix is
-    PD and ``phi`` is smooth and strictly *decreasing* from +inf (as
-    ``lam -> e_max^+``) to 0 (as ``lam -> +inf``), so ``phi(lam) = 1`` has a
-    *unique* root there -- the global maximizer, the top-eigenvector branch
-    that actually recovers the signal.
-
-    NOTE: an earlier version bracketed the root on ``(-inf, e_min)`` instead.
-    That is the *minimization* branch: it returns the bottom eigenvector of
-    ``A`` (pure noise), which is why Method B never recovered the signal --
-    and why shrinking mu made it worse, since mu->0 sends theta straight to
-    ``u_min(A)``. We now bracket the upper branch.
-
-    The "hard case"
-    ---------------
-    If ``b`` has (almost) no component along the *top* eigenspace of ``A``,
-    the pole of ``phi`` at ``e_max`` vanishes and ``phi(lam)`` stays bounded
-    as ``lam -> e_max^+``. Its supremum ``L`` may be ``<= 1``, so there is no
-    root above ``e_max``; the constrained maximizer then sits exactly at
-    ``lam = e_max`` with a compensating component along the top eigenvector
-    added so that ``||theta|| = 1``. Detected and handled explicitly.
-
-    Returns
-    -------
-    (theta, lam) with ``theta`` of unit norm and ``lam >= e_max``.
-    """
-    # A is symmetric by construction (Y2, F1 and I are all symmetric).
-    evals, evecs = np.linalg.eigh(A)            # ascending eigenvalues
-    c = evecs.T @ b                             # b in the eigenbasis
-    e_max = evals[-1]
-    span = max(1.0, abs(e_max))
-
-    def phi(lam):
-        return np.sum((c / (lam - evals)) ** 2)
-
-    # Top eigenspace (group near-degenerate eigenvalues) and how much of
-    # b lives in it.
-    deg = evals >= e_max - 1e-9 * span
-    free = ~deg
-    c_max_norm = np.linalg.norm(c[deg])
-
-    def hard_case_solution():
-        """Solution at ``lam = e_max`` plus a u_max component for unit norm."""
-        if free.any():
-            theta_perp = evecs[:, free] @ (c[free] / (e_max - evals[free]))
-        else:
-            theta_perp = np.zeros_like(b, dtype=float)
-        n2 = float(theta_perp @ theta_perp)
-        tau = np.sqrt(max(0.0, 1.0 - n2))       # fill the remaining norm
-        theta = theta_perp + tau * evecs[:, -1]
-        nrm = np.linalg.norm(theta)
-        if nrm == 0.0:                          # b ~ 0: any unit vector works
-            return evecs[:, -1], e_max
-        return theta / nrm, e_max
-
-    # ---- Hard case: phi cannot reach 1 above e_max -> no exterior root. ----
-    if c_max_norm <= 1e-9 * max(1.0, np.linalg.norm(b)):
-        L = (np.sum((c[free] / (e_max - evals[free])) ** 2)
-             if free.any() else 0.0)
-        if L <= 1.0:
-            return hard_case_solution()
-        # else a genuine exterior root exists; fall through to bracketing.
-
-    # ---- Standard case: bracket the unique root in (e_max, +inf). ----------
-    # Near end: approach the pole at e_max until phi > 1.
-    lo = e_max + 1e-9 * span
-    while phi(lo) <= 1.0:
-        gap = lo - e_max
-        if gap < 1e-15 * span:                  # pole too weak to reach 1
-            return hard_case_solution()
-        lo = e_max + gap * 0.1
-
-    # Far end: far enough right that phi < 1.
-    hi = e_max + span
-    while phi(hi) >= 1.0:
-        hi += span
-
-    # Guaranteed sign change now: phi(hi) < 1 < phi(lo).
-    lam = brentq(lambda l: phi(l) - 1.0, lo, hi,
-                 xtol=tol, rtol=1e-14, maxiter=200)
-    theta = evecs @ (c / (lam - evals))         # = (lam*I - A)^{-1} b
-    return theta / np.linalg.norm(theta), lam
-
-
-# ---------------------------------------------------------------- overlap of x1 with the top eigenvector of A
-# used by overlap_x1_vs_n, overlap_x1_vs_rho, overlap_x1_vs_lam1 in plot_maker_tali.py
-
-
-
+# ---------------------------------------------------------------- the three choices of x in A = Y2 - I + 2 mu F1(x)
+# overlaps_A_one_draw: used by overlap_x1_vs_n, overlap_x1_vs_rho, overlap_x1_vs_lam1 in plot_maker_tali.py
+# top_eig_A_one_draw:  used by fig_comp_x_hat in plot_maker_tali.py
 
 def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     """One draw. Builds A = Y2 - I + 2 mu F1(x) for the three choices of x
@@ -398,28 +276,34 @@ def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     return overlap_xhat, overlap_bbp, overlap_m1x1
 
 
-def overlap_A_theory(lam1, lam2, rho, mu):
-    """Theoretical |<x1, v>|, v = top eigenvector of A, for x = x_hat or the BBP surrogate.
-    beta is the same 3x3 matrix as in source_twospike.beta_value, in the basis
-    (x1, (x2 - rho x1)/sqrt(1-rho^2), g_perp). With theta, u its top eigenvalue / eigenvector,
-    BBP gives |<x1, v>| = sqrt(1 - 1/theta^2) * |u[0]| if theta > 1, else 0."""
+def top_eig_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
+    """One draw. Same three choices of x as overlaps_A_one_draw
+         1) the true x_hat (top eigenvector of Y1)
+         2) the BBP surrogate m1 x1 + sqrt(1 - m1^2) g_perp
+         3) m1 x1
+    but returns the top eigenvalue of A = Y2 - I + 2 mu F1(x) for each of them.
+    All three use the same Y1, Y2."""
+    S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=alpha)
+    x1 = S.get_x1()
     m1 = sts.m1_theory(lam1)
-    c = 2 * mu * (lam1 - 1) ** 2
-    s_rho = np.sqrt(max(0.0, 1 - rho ** 2))
-    s_m = np.sqrt(max(0.0, 1 - m1 ** 2))
-    beta = np.array([
-        [c * m1 ** 2 + lam2 * rho ** 2, lam2 * rho * s_rho,    c * m1 * s_m],
-        [lam2 * rho * s_rho,            lam2 * (1 - rho ** 2), 0.0],
-        [c * m1 * s_m,                  0.0,                   c * (1 - m1 ** 2)],
-    ])
-    w, U = np.linalg.eigh(beta)
-    theta = w[-1]
-    u = U[:, -1]
-    if theta > 1:
-        return np.sqrt(1 - 1 / theta ** 2) * abs(u[0])
-    else:
-        return 0.0
-    
+
+    # random unit vector orthogonal to x1
+    g = np.random.normal(0, 1, n)
+    g_perp = g - (g @ x1) * x1
+    g_perp = g_perp / np.linalg.norm(g_perp)
+
+    # the three choices of x
+    _, x_hat = S.top_eigenvector(S.Y1)
+    x_bbp = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp
+    x_m1x1 = m1 * x1
+
+    # top eigenvalue of A for each x (eigvalsh sorts ascending, so [-1] is the top one)
+    top_xhat = np.linalg.eigvalsh(S.A(x_hat, mu))[-1]
+    top_bbp = np.linalg.eigvalsh(S.A(x_bbp, mu))[-1]
+    top_m1x1 = np.linalg.eigvalsh(S.A(x_m1x1, mu))[-1]
+
+    return top_xhat, top_bbp, top_m1x1
+
 
 def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
     """One draw: top eigenvalue of A = Y2 - I + 2 mu F1(x) for the three choices of x

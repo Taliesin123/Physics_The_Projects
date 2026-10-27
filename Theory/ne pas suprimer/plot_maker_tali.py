@@ -1,61 +1,37 @@
 import sys
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from class_twospike import TwoSpikes
-import os
-import source_twospike as sts
-import source_plots as sp
+import source_twospike as sts       # theory
+import source_plots as sp           # functions used to make the plots (simulations)
+# The TwoSpikes class is in class_twospike.py
 
-    
+
 ALPHA = np.sqrt(0.5)
 DIR_PLOTS = "results"       # la ou on envoie nos plots (quel folder)
 os.makedirs(DIR_PLOTS, exist_ok=True)
 
 
-
-
-# ---------------------------------------------------------------- numerics
-def make(n, a, b, rho):
-    return TwoSpikes(n, a / ALPHA, b / np.sqrt(1 - ALPHA**2), rho, alpha=ALPHA)
-
-
-def top2(Y):
-    w, V = np.linalg.eigh(Y)
-    return w[-1:-3:-1], V[:, -1:-3:-1]        # 2 largest, descending
-
-
-def sample_overlaps(n, a, b, rho, reps):
-    """Mean over reps of (|<x_hat,x1>|, |<x_hat,x2>|), x_hat = top eigenvector of Y."""
-    o = np.zeros(2)
-    for _ in range(reps):
-        S = TwoSpikes(n, a / ALPHA, b / np.sqrt(1 - ALPHA**2), rho, alpha=ALPHA)
-                # naive_matrix = alpha*Y1 + sqrt(1-alpha^2)*Y2 = Y
-        o += S.overlaps("naive")
-    return o / reps
-
-
-# ---------------------------------------------------------------- figures
+# ---------------------------------------------------------------- eigenvalues / eigenvectors of Y (naive)
 def fig_eig(n=500, sims=30):
-    """Top-2 eigenvalues of Y vs a, b, rho: mean +- std over `sims` simulations."""
+    """Top-2 eigenvalues of Y vs a, b, rho: mean +- std over `sims` simulations.
+    Dashed: BBP theory theta_pm + 1/theta_pm (bulk edge 2 below threshold), theta_pm = eigenvalues of P."""
     base = dict(a=2.0, b=3.0, rho=0.5)
     sweeps = dict(a=np.linspace(0.1, 4, 40), b=np.linspace(0.1, 4, 40), rho=np.linspace(0, 1, 40))
     fig, axes = plt.subplots(1, 3, figsize=(13, 3.5))
 
     for ax, (name, grid) in zip(axes, sweeps.items()):
-
         p = dict(base)
-        th, bbp, mean, std = [], [], []
+        th, mean, std = [], [], []
         for val in grid:
             p[name] = val
-
-            lam1 = p["a"]/ALPHA
-            lam2 = p["b"]/np.sqrt(1 - ALPHA**2)
-            S = TwoS_theory(n, lam1, lam2, p["rho"])
-            _, eig = S.get_eigY()
-            th.append(eig)
-            bbp.append()
-            runs = [top2(make(n, **p).naive_matrix)[0] for _ in range(sims)]  #top eigenval pf Y
+            th.append(sts.eigval_Y(p["a"], p["b"], p["rho"]))       # theory
+            runs = []
+            for _ in range(sims):
+                S = sp.make(n, p["a"], p["b"], p["rho"], ALPHA)
+                eigvals, _ = sp.top2(S.naive_matrix)                  # 2 top eigenvalues of Y
+                runs.append(eigvals)
             mean.append(np.mean(runs, 0)); std.append(np.std(runs, 0))
         th, mean, std = np.array(th), np.array(mean), np.array(std)
 
@@ -68,9 +44,9 @@ def fig_eig(n=500, sims=30):
         ax.set_xlabel(name); ax.set_ylabel("eigenvalue of Y"); ax.set_title(f"n={n}, {sims} sims, {others}")
         ax.grid(); ax.legend(fontsize=8)
     fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, "eigenvalues_Y.png"), dpi=120)
+    plt.close(fig)
 
 
-#### a refaire 
 def fig_lambda(n=2000, rho=0.3, sims=30):
     """BBP eigenvector check vs lambda (lambda1 = lambda2 = lambda, so a = b = lambda/sqrt2
     and theta_pm = a(1 +- rho)).
@@ -80,29 +56,23 @@ def fig_lambda(n=2000, rho=0.3, sims=30):
     theory says |<u_pm, v_pm>| -> sqrt(1 - theta_pm^-2) above threshold, 0 below.
 
     NB this is NOT the overlap with the signals themselves: that one is
-    m_i = |<x_hat, x_i>| (report, eq. m12), computed by `theory_overlaps` / `sample_overlaps`.
+    m_i = |<x_hat, x_i>| (report, eq. m12), computed by `sp.sample_overlaps`.
 
     Dots/error bars: mean +- std over `sims` simulations. Dashed: theory.
     """
     lams = np.linspace(0.1, 5, 100)
     mean, std, th = [], [], []
     for lam in lams:
-        a = ALPHA * lam
-        #b =
+        a = ALPHA * lam                          # lambda1 = lambda2 = lam
+        b = np.sqrt(1 - ALPHA**2) * lam
         runs = []
         for _ in range(sims):
-            S = make(n, lam, lam, rho)
-            Sth = TwoS_theory(n, lam, lam, rho)
-    ### compute methods (called function in here are at the bottom of the class)
-            S.compute_method(["naive"])
-            V = S.get_theta("naive")
-            _ , V1= Sth.get_eigY()
-            v1 = V1[0]
-            th
-            runs.append([abs(V[:, 0] @ v1), abs(V[:, 1] @ v2)])
-            
+            S = sp.make(n, a, b, rho, ALPHA)
+            _, U = sp.top2(S.naive_matrix)                            # u_+, u_- : top-2 eigenvectors of Y
+            vp, vm = sts.eigvect_P(a, b, S.get_x1(), S.get_x2(), rho)  # v_+, v_- : eigenvectors of P
+            runs.append([abs(U[:, 0] @ vp), abs(U[:, 1] @ vm)])
         mean.append(np.mean(runs, 0)); std.append(np.std(runs, 0))
-        th.append([np.sqrt(max(0, 1 - t**-2)) for t in theta_pm(a, b, rho)])
+        th.append([np.sqrt(max(0, 1 - t**-2)) for t in sts.eigval_P(a, b, rho)])
     mean, std, th = np.array(mean), np.array(std), np.array(th)
     sim_labels = [r"simulation: $|\langle \hat{u}_+, \hat{v}_+\rangle|$ ($n=%d$, %d runs)" % (n, sims),
                   r"simulation: $|\langle \hat{u}_-, \hat{v}_-\rangle|$ ($n=%d$, %d runs)" % (n, sims)]
@@ -118,16 +88,23 @@ def fig_lambda(n=2000, rho=0.3, sims=30):
     ax.set_ylabel(r"$|\langle \hat{u}_\pm, \hat{v}_\pm\rangle|$")
     ax.set_title(rf"Noisy vs noiseless eigenvectors   ($\rho$={rho}, $\lambda_1=\lambda_2=\lambda$)")
     ax.grid(); ax.legend(fontsize=9, loc="lower right")
-    fig.tight_layout(); fig.savefig("overlaps_vs_lambda.png", dpi=120)
+    fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, "overlaps_vs_lambda.png"), dpi=120)
+    plt.close(fig)
 
 
 def heat(xname, xs, b_fixed, fname, n=300, reps=4):
-    """Heatmaps of |<x_hat,x1>|, |<x_hat,x2>| vs (x, rho); x is lambda1 or a; b fixed."""
+    """Heatmaps of |<x_hat,x1>|, |<x_hat,x2>| vs (x, rho); x is "lambda1" or "a"; b fixed."""
     rhos = np.linspace(0, 1, 30)
-    A = xs * ALPHA if xname == r"\lambda_1" else xs
-    Z = np.array([[sample_overlaps(n, a, b_fixed, r, reps) for a in A] for r in rhos])  # (rho, x, 2)       We are using Y noisy here
+    if xname == "lambda1":
+        a_values = xs * ALPHA                    # a = alpha * lambda1
+    else:
+        a_values = xs
+    Z = np.array([[sp.sample_overlaps(n, a, b_fixed, r, reps, ALPHA) for a in a_values] for r in rhos])  # (rho, x, 2), Y noisy
     X, R = np.meshgrid(xs, rhos)
-    tp, _ = theta_pm(X * ALPHA if xname == r"\lambda_1" else X, b_fixed, R)
+    if xname == "lambda1":
+        tp, _ = sts.eigval_P(X * ALPHA, b_fixed, R)
+    else:
+        tp, _ = sts.eigval_P(X, b_fixed, R)
     fig, axes = plt.subplots(1, 2, figsize=(11, 4))
     for k, ax in enumerate(axes):
         im = ax.pcolormesh(xs, rhos, Z[:, :, k], cmap="Greys", vmin=0, vmax=1, shading="nearest")
@@ -136,7 +113,8 @@ def heat(xname, xs, b_fixed, fname, n=300, reps=4):
         ax.set_xlabel(xname); ax.set_ylabel(r"$\rho$"); ax.legend(loc="upper right")
         ax.set_title(rf"$|\langle \hat x, x_{k+1}\rangle|$,  b={b_fixed:.2f}, n={n}")
         fig.colorbar(im, ax=ax)
-    fig.tight_layout(); fig.savefig(fname, dpi=120)
+    fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, fname), dpi=120)
+    plt.close(fig)
 
 
 def fig_heat():
@@ -149,29 +127,24 @@ def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=500, reps=3, omax=0.7):
     grid = np.linspace(0.1, 3, 75)
     A, B = np.meshgrid(grid, grid)                      # A[j, i] = grid[i] (x), B[j, i] = grid[j] (y)
     for rho in rhos:
-        Z = np.array([[sample_overlaps(n, a, b, rho, reps) for a in grid] for b in grid])  # (b, a, 2)
+        Z = np.array([[sp.sample_overlaps(n, a, b, rho, reps, ALPHA) for a in grid] for b in grid])  # (b, a, 2)
         rgb = np.zeros((*Z.shape[:2], 3)); rgb[..., :2] = np.clip(Z / omax, 0, 1)
-        tp, tm = theta_pm(A, B, rho)  # juste garder thetaPlus
+        tp, _ = sts.eigval_P(A, B, rho)                 # only theta_+ is plotted
         fig, ax = plt.subplots(figsize=(6, 5))
         ax.imshow(rgb, origin="lower", extent=[grid[0], grid[-1], grid[0], grid[-1]], aspect="auto")
         ax.axvline(1, color="white", ls="--", lw=1); ax.axhline(1, color="white", ls="--", lw=1)
         ax.contour(A, B, tp, levels=[1], colors="red", linewidths=2)
-        ax.contour(A, B, tm, levels=[1], colors="red", linewidths=2, linestyles="dashed")
         ax.set_xlabel("a"); ax.set_ylabel("b"); ax.set_title(f"rho={rho}, n={n}")
         ax.legend(handles=[mpatches.Patch(color="k", label="none"), mpatches.Patch(color="r", label=r"$x_1$ only"),
                            mpatches.Patch(color=(0, 1, 0), label=r"$x_2$ only"), mpatches.Patch(color="y", label="both"),
                            plt.Line2D([], [], color="white", ls="--", label="BBP a=1, b=1"),
-                           plt.Line2D([], [], color="red", label=r"$\theta_+=1$"),
-                           plt.Line2D([], [], color="red", ls="--", label=r"$\theta_-=1$")],
+                           plt.Line2D([], [], color="red", label=r"$\theta_+=1$")],
                   loc="upper left", fontsize=7, framealpha=0.6)
-        fig.tight_layout(); fig.savefig(f"phase_rho={rho}.png", dpi=120); plt.close(fig)
-
-# ---------------------------------------------------------------- figures
+        fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, f"phase_rho={rho}.png"), dpi=120); plt.close(fig)
 
 
-
-# PLOTS DE L'OVERLAP ENTRE x1 ET LE TOP EIGENVECTOR DE A = Y2 - I + 2 mu F1(x), POUR LES 3 CHOIX DE x
-# (x_hat, BBP surrogate, m1 x1). Les fonctions de calcul sont dans source_plots.py
+# ---------------------------------------------------------------- the matrix A = Y2 - I + 2 mu F1(x), for the 3 choices of x
+# PLOTS DE L'OVERLAP ENTRE x1 ET LE TOP EIGENVECTOR DE A, POUR LES 3 CHOIX DE x (x_hat, BBP surrogate, m1 x1)
 
 def overlap_x1_vs_n(lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=20):
     n_values = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000]
@@ -194,7 +167,7 @@ def overlap_x1_vs_n(lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=20):
         mean_m1x1.append(np.mean(list_m1x1))
         err_m1x1.append(np.std(list_m1x1) / np.sqrt(sims))
 
-    theory = sp.overlap_A_theory(lam1, lam2, rho, mu)     # does not depend on n
+    theory = sts.overlap_A_theory(lam1, lam2, rho, mu)     # does not depend on n
 
     plt.figure(figsize=(7, 4.8))
     plt.errorbar(n_values, mean_xhat, err_xhat, color="C0", marker="o", ms=3, capsize=2, label=r"true $\hat x$")
@@ -235,7 +208,7 @@ def overlap_x1_vs_rho(n=500, lam1=2.0, lam2=3.0, mu=0.5, sims=20):
     rho_fine = np.linspace(0, 1, 300)
     theory = []
     for rho in rho_fine:
-        theory.append(sp.overlap_A_theory(lam1, lam2, rho, mu))
+        theory.append(sts.overlap_A_theory(lam1, lam2, rho, mu))
 
     plt.figure(figsize=(7, 4.8))
     plt.errorbar(rho_values, mean_xhat, err_xhat, color="C0", marker="o", ms=3, capsize=2, label=r"true $\hat x$")
@@ -276,7 +249,7 @@ def overlap_x1_vs_lam1(n=500, lam2=3.0, mu=0.5, rho=0.5, sims=20):
     lam1_fine = np.linspace(0.5, 4, 300)
     theory = []
     for lam1 in lam1_fine:
-        theory.append(sp.overlap_A_theory(lam1, lam2, rho, mu))
+        theory.append(sts.overlap_A_theory(lam1, lam2, rho, mu))
 
     plt.figure(figsize=(7, 4.8))
     plt.errorbar(lam1_values, mean_xhat, err_xhat, color="C0", marker="o", ms=3, capsize=2, label=r"true $\hat x$")
@@ -292,6 +265,7 @@ def overlap_x1_vs_lam1(n=500, lam2=3.0, mu=0.5, rho=0.5, sims=20):
     plt.tight_layout()
     plt.savefig(os.path.join(DIR_PLOTS, "overlap_x1_vs_lam1.png"), dpi=120)
     plt.close()
+
 
 def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26):
     """Top eigenvalue of A = Y2 - I + 2 mu F1(x) for three choices of x:
@@ -320,21 +294,8 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
         res = np.zeros((len(grid), sims, 3))    # (grid point, simulation, which x)
         for i, val in enumerate(grid):
             p = dict(base); p[name] = val
-            with np.errstate(invalid="ignore"):          # sqrt(<0) evaluated by np.where for lam1<1 (result is 0)
-                m1 = float(sts.overlap_Y_P(p["lam1"]))
             for s in range(sims):
-                # same draw as _comp_x_hat_draw, but we also need S (for Y2) to build A
-                S = TwoSpikes(n, p["lam1"], lam2, p["rho"], mu=mu, alpha=ALPHA)
-                x1 = S.get_x1()
-                g = np.random.normal(0, 1, n)
-                g_perp = g - (g @ x1) * x1
-                g_perp /= np.linalg.norm(g_perp)
-                _, xhat = S.top_eigenvector(S.Y1)
-                xs = [xhat,                                       # true x_hat
-                      m1 * x1 + np.sqrt(1 - m1**2) * g_perp,      # BBP surrogate
-                      m1 * x1]                                    # m1 x1
-                # A = Y2 - I + 2 mu F1(x); eigvalsh is sorted ascending, so [-1] is the top eigenvalue
-                res[i, s] = [np.linalg.eigvalsh(S.A(x, mu))[-1] for x in xs]
+                res[i, s] = sp.top_eig_A_one_draw(n, p["lam1"], lam2, p["rho"], mu, alpha=ALPHA)
         mean, sem = res.mean(1), res.std(1) / np.sqrt(sims)
         out[name] = (grid, mean, sem)
         for k in range(3):
@@ -344,8 +305,7 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
         pred = []
         for val in fine:
             p = dict(base); p[name] = val
-            with np.errstate(invalid="ignore"):
-                m1 = float(sts.overlap_Y_P(p["lam1"]))
+            m1 = sts.m1_theory(p["lam1"])
             th = sts.beta_value(mu, p["lam1"], m1, lam2, p["rho"])
             pred.append(th + 1 / th - 1 if th > 1 else 1.0)
         ax.plot(fine, pred, "k--", lw=1.5,
@@ -358,6 +318,7 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
         ax.grid(); ax.legend(fontsize=8)
     fig.suptitle(f"all the x and theory over {sims} simulations")
     fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, "comp_x_hat.png"), dpi=120)
+    plt.close(fig)
     return out
 
 
