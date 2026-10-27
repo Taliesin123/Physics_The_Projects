@@ -120,7 +120,7 @@ def heat(xname, xs, b_fixed, fname, n=300, reps=4):
 def fig_heat():
     lam2 = 1.0
     heat("lambda1", np.linspace(0.1, 3, 25), np.sqrt(1 - ALPHA**2) * lam2, "heat_lambda1_rho.png")
-    heat("a", np.linspace(0.1, 3, 25), 2, "heat_a_rho.png")
+    heat("a", np.linspace(0.1, 3, 25), 0.70, "heat_a_rho.png")
 
 
 def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=500, reps=3, omax=0.7):
