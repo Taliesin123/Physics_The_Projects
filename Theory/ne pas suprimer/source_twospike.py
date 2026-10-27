@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import branq
+#from scipy.optimize import brant
 
 
 def eigval_P(a,b,rho):
@@ -72,3 +72,6 @@ def beta_value(mu, lambda1, m1, lambda2, rho):  # builds the beta matrix, diagon
         [c * m1 * s_m,                     0.0,                      c * (1 - m1 ** 2)],
     ])
     return np.linalg.eigvalsh(beta)[-1]
+
+def overlap(x1, x2):
+    return abs(np.dot(x1, x2))

@@ -2,10 +2,9 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import two_spikes_th_lib as theory
-from spike_lib import TwoSpikes
-from two_spikes_th_lib import TwoS_theory
+from class_twospike import TwoSpikes
 import os
+import source_twospike as sts
 
     
 ALPHA = np.sqrt(0.5)
@@ -173,7 +172,7 @@ def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
     (true x_hat, BBP surrogate, m1 x1). All three use the same Y2."""
     S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=ALPHA)
     with np.errstate(invalid="ignore"):          # np.where evaluates sqrt(<0) for lam1<1 (result is 0 anyway)
-        m1 = float(theory.overlap_Y_P(lam1))    # BBP overlap of top eigvec of Y1 with x1
+        m1 = float(sts.overlap_Y_P(lam1))    # BBP overlap of top eigvec of Y1 with x1
     x1 = S.get_x1()
     g = np.random.normal(0, 1, n)
     g_perp = g - (g @ x1) * x1                  # project out x1
@@ -182,9 +181,44 @@ def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
                                                 # (50 power iterations) is not converged for lam1 < ~1.3
     xs = [xhat,                                          # le vrai x_hat
           m1 * x1 + np.sqrt(1 - m1**2) * g_perp,         # x_hat BBP (proj + g)
-          m1 * x1]                                       # m1 x1 (norm m1, not 1)
-    return [np.linalg.eigvalsh(S.A(x, mu))[-1] for x in xs]
+          m1 * x1,                                        # m1 x1 (norm m1, not 1)
+          x1]
+    return xs
 
+# PLOT DE L'OVERLAP ENTRE NOTRE SIGNAL ET NOS DIFFERENTS ESTIMATEURS EN FONCTION DE N
+def overlap_x_1_with_estimators(lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50):
+    avg1 = []
+    std1 = []
+    avg2 = []
+    std2 = []
+    avg3 = []
+    std3 = []
+    n_values = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1500, 2000]
+    for n in n_values:
+        values1 = []
+        values2 = []
+        values3 = []
+        for i in range(sims):
+            xhat, xbbp, m1x1, x1 = _comp_x_hat_draw(n, lam1, lam2, rho, mu)
+            values1.append(sts.overlap(x1, xhat))
+            values2.append(sts.overlap(x1, xbbp))
+            values3.append(sts.overlap(x1, m1x1))
+        avg1.append(np.mean(values1))
+        std1.append(np.std(values1))
+        avg2.append(np.mean(values2))
+        std2.append(np.std(values2))
+        avg3.append(np.mean(values3))
+        std3.append(np.std(values3))
+    plt.errorbar(n_values, avg1, std1, label = "x_hat_le_vrai")
+    plt.legend()
+    plt.show()
+    plt.errorbar(n_values, avg2, std2, label = "x_hat_BBP_proj + g")
+    plt.legend()
+    plt.show()
+    plt.errorbar(n_values, avg3, std3, label = "m_1 * x_1")
+    plt.legend()
+    plt.show()
+    return None
 
 def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26):
     """Top eigenvalue of A = Y2 - I + 2 mu F1(x) for three choices of x:
@@ -193,7 +227,7 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
       - m1 x1 alone.
     Left: vs rho (lam1 fixed). Right: vs lam1 (rho fixed).
     Points: mean over `sims` draws; error bars: standard error of the mean (std / sqrt(sims)).
-    Dashed: theory, theta + 1/theta - 1 with theta = theory.beta_value(mu, lam1, m1, lam2, rho).
+    Dashed: theory, theta + 1/theta - 1 with theta = sts.beta_value(mu, lam1, m1, lam2, rho).
 
     g_perp only needs to be orthogonal to x1: the noise part of the true x_hat comes from Z1,
     which is independent of x2. (Projecting out x2 as well made X^T X singular at rho = 1.)
@@ -213,8 +247,21 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
         res = np.zeros((len(grid), sims, 3))    # (grid point, simulation, which x)
         for i, val in enumerate(grid):
             p = dict(base); p[name] = val
+            with np.errstate(invalid="ignore"):          # sqrt(<0) evaluated by np.where for lam1<1 (result is 0)
+                m1 = float(sts.overlap_Y_P(p["lam1"]))
             for s in range(sims):
-                res[i, s] = _comp_x_hat_draw(n, p["lam1"], lam2, p["rho"], mu)
+                # same draw as _comp_x_hat_draw, but we also need S (for Y2) to build A
+                S = TwoSpikes(n, p["lam1"], lam2, p["rho"], mu=mu, alpha=ALPHA)
+                x1 = S.get_x1()
+                g = np.random.normal(0, 1, n)
+                g_perp = g - (g @ x1) * x1
+                g_perp /= np.linalg.norm(g_perp)
+                _, xhat = S.top_eigenvector(S.Y1)
+                xs = [xhat,                                       # true x_hat
+                      m1 * x1 + np.sqrt(1 - m1**2) * g_perp,      # BBP surrogate
+                      m1 * x1]                                    # m1 x1
+                # A = Y2 - I + 2 mu F1(x); eigvalsh is sorted ascending, so [-1] is the top eigenvalue
+                res[i, s] = [np.linalg.eigvalsh(S.A(x, mu))[-1] for x in xs]
         mean, sem = res.mean(1), res.std(1) / np.sqrt(sims)
         out[name] = (grid, mean, sem)
         for k in range(3):
@@ -225,8 +272,8 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
         for val in fine:
             p = dict(base); p[name] = val
             with np.errstate(invalid="ignore"):
-                m1 = float(theory.overlap_Y_P(p["lam1"]))
-            th = theory.beta_value(mu, p["lam1"], m1, lam2, p["rho"])
+                m1 = float(sts.overlap_Y_P(p["lam1"]))
+            th = sts.beta_value(mu, p["lam1"], m1, lam2, p["rho"])
             pred.append(th + 1 / th - 1 if th > 1 else 1.0)
         ax.plot(fine, pred, "k--", lw=1.5,
                 label=r"theory: $\theta + 1/\theta - 1$, $\theta = \theta_{\max}(\beta)$")
@@ -241,11 +288,13 @@ def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26
     return out
 
 
+
 if __name__ == "__main__":
-    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase", "comp_x_hat"]
+    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase", "comp_x_hat", "overlap_x_1_with_estimators"]
     if "eig" in todo: fig_eig()
     if "lam" in todo: fig_lambda()
     if "heat" in todo: fig_heat()
     if "phase" in todo: fig_phase()
     if "comp_x_hat" in todo: fig_comp_x_hat()
+    if "overlap_x_1_with_estimators" in todo: overlap_x_1_with_estimators()
     plt.show()

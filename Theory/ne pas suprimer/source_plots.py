@@ -1,7 +1,5 @@
 import numpy as np
 
-
-
 def semi_circle(z): #takes an array of values, return the semi circle for those values
     z = np.asarray(z)
     result = np.zeros_like(z, dtype=float)
