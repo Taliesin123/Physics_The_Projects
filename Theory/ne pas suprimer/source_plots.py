@@ -1,5 +1,6 @@
 import numpy as np
 from class_twospike import TwoSpikes
+import source_twospike as sts
 
 def semi_circle(z): #takes an array of values, return the semi circle for those values
     z = np.asarray(z)
@@ -360,12 +361,7 @@ def solve_norm_constrained(A, b, tol=1e-12):
 # ---------------------------------------------------------------- overlap of x1 with the top eigenvector of A
 # used by overlap_x1_vs_n, overlap_x1_vs_rho, overlap_x1_vs_lam1 in plot_maker_tali.py
 
-def m1_theory(lam1):
-    """BBP overlap between x1 and the top eigenvector of Y1: sqrt(1 - 1/lam1^2) if lam1 > 1, else 0."""
-    if lam1 > 1:
-        return np.sqrt(1 - 1 / lam1 ** 2)
-    else:
-        return 0.0
+
 
 
 def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
@@ -377,7 +373,7 @@ def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     All three use the same Y1, Y2."""
     S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=alpha)
     x1 = S.get_x1()
-    m1 = m1_theory(lam1)
+    m1 = sts.m1_theory(lam1)
 
     # random unit vector orthogonal to x1
     g = np.random.normal(0, 1, n)
@@ -407,7 +403,7 @@ def overlap_A_theory(lam1, lam2, rho, mu):
     beta is the same 3x3 matrix as in source_twospike.beta_value, in the basis
     (x1, (x2 - rho x1)/sqrt(1-rho^2), g_perp). With theta, u its top eigenvalue / eigenvector,
     BBP gives |<x1, v>| = sqrt(1 - 1/theta^2) * |u[0]| if theta > 1, else 0."""
-    m1 = m1_theory(lam1)
+    m1 = sts.m1_theory(lam1)
     c = 2 * mu * (lam1 - 1) ** 2
     s_rho = np.sqrt(max(0.0, 1 - rho ** 2))
     s_m = np.sqrt(max(0.0, 1 - m1 ** 2))
@@ -423,3 +419,22 @@ def overlap_A_theory(lam1, lam2, rho, mu):
         return np.sqrt(1 - 1 / theta ** 2) * abs(u[0])
     else:
         return 0.0
+    
+
+def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
+    """One draw: top eigenvalue of A = Y2 - I + 2 mu F1(x) for the three choices of x
+    (true x_hat, BBP surrogate, m1 x1). All three use the same Y2."""
+    S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=np.sqrt(0.5))
+    with np.errstate(invalid="ignore"):          # np.where evaluates sqrt(<0) for lam1<1 (result is 0 anyway)
+        m1 = float(sts.overlap_Y_P(lam1))    # BBP overlap of top eigvec of Y1 with x1
+    x1 = S.get_x1()
+    g = np.random.normal(0, 1, n)
+    g_perp = g - (g @ x1) * x1                  # project out x1
+    g_perp /= np.linalg.norm(g_perp)
+    _, xhat = S.top_eigenvector(S.Y1)           # exact top eigvec of Y1 (eigh). NB S.compute_theta1()
+                                                # (50 power iterations) is not converged for lam1 < ~1.3
+    xs = [xhat,                                          # le vrai x_hat
+          m1 * x1 + np.sqrt(1 - m1**2) * g_perp,         # x_hat BBP (proj + g)
+          m1 * x1,                                        # m1 x1 (norm m1, not 1)
+          x1]
+    return xs

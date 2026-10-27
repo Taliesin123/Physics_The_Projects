@@ -168,23 +168,7 @@ def fig_phase(rhos=(0.0, 0.1, 0.2, 0.3, 0.5, 1.0), n=500, reps=3, omax=0.7):
 
 # ---------------------------------------------------------------- figures
 
-def _comp_x_hat_draw(n, lam1, lam2, rho, mu):
-    """One draw: top eigenvalue of A = Y2 - I + 2 mu F1(x) for the three choices of x
-    (true x_hat, BBP surrogate, m1 x1). All three use the same Y2."""
-    S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=ALPHA)
-    with np.errstate(invalid="ignore"):          # np.where evaluates sqrt(<0) for lam1<1 (result is 0 anyway)
-        m1 = float(sts.overlap_Y_P(lam1))    # BBP overlap of top eigvec of Y1 with x1
-    x1 = S.get_x1()
-    g = np.random.normal(0, 1, n)
-    g_perp = g - (g @ x1) * x1                  # project out x1
-    g_perp /= np.linalg.norm(g_perp)
-    _, xhat = S.top_eigenvector(S.Y1)           # exact top eigvec of Y1 (eigh). NB S.compute_theta1()
-                                                # (50 power iterations) is not converged for lam1 < ~1.3
-    xs = [xhat,                                          # le vrai x_hat
-          m1 * x1 + np.sqrt(1 - m1**2) * g_perp,         # x_hat BBP (proj + g)
-          m1 * x1,                                        # m1 x1 (norm m1, not 1)
-          x1]
-    return xs
+
 
 # PLOTS DE L'OVERLAP ENTRE x1 ET LE TOP EIGENVECTOR DE A = Y2 - I + 2 mu F1(x), POUR LES 3 CHOIX DE x
 # (x_hat, BBP surrogate, m1 x1). Les fonctions de calcul sont dans source_plots.py
