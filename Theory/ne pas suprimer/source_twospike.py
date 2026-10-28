@@ -115,3 +115,15 @@ def overlap_A_theory(lam1, lam2, rho, mu):
         return np.sqrt(1 - 1 / theta ** 2) * abs(u[0])
     else:
         return 0.0
+
+
+def top_eig_A_theory(lam1, lam2, rho, mu):
+    """Theoretical top eigenvalue of A = Y2 - I + 2 mu F1(x), for x = x_hat, x_pg1 or x_pg12.
+    theta = top eigenvalue of beta (beta_value). BBP: theta + 1/theta - 1 if theta > 1,
+    else the bulk edge 2 - 1 = 1."""
+    m1 = m1_theory(lam1)
+    theta = beta_value(mu, lam1, m1, lam2, rho)
+    if theta > 1:
+        return theta + 1 / theta - 1
+    else:
+        return 1.0

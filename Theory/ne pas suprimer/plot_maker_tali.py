@@ -387,70 +387,154 @@ def overlap_xhat_vs_lam1(n=500, lam2=3.0, rho=0.5, sims=20):
     plt.close()
 
 
-def fig_comp_x_hat(n=500, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5, sims=50, n_pts=26):
-    """Top eigenvalue of A = Y2 - I + 2 mu F1(x) for three choices of x:
-      - the true x_hat (top eigenvector of Y1),
-      - the BBP surrogate m1 x1 + sqrt(1 - m1^2) g_perp  (g_perp random, orthogonal to x1),
-      - m1 x1 alone.
-    Left: vs rho (lam1 fixed). Right: vs lam1 (rho fixed).
-    Points: mean over `sims` draws; error bars: standard error of the mean (std / sqrt(sims)).
-    Dashed: theory, theta + 1/theta - 1 with theta = sts.beta_value(mu, lam1, m1, lam2, rho).
+# PLOTS DE LA PLUS GRANDE VALEUR PROPRE DE A = Y2 - I + 2 mu F1(x), POUR LES 4 CHOIX DE x (x_hat, x_pg1, x_m1, x_pg12)
+# Theory (for x_hat, x_pg1, x_pg12): theta + 1/theta - 1, theta = top eigenvalue of beta (sts.top_eig_A_theory)
 
-    g_perp only needs to be orthogonal to x1: the noise part of the true x_hat comes from Z1,
-    which is independent of x2. (Projecting out x2 as well made X^T X singular at rho = 1.)
-    """
-    sweeps = {"rho": np.linspace(0, 1, n_pts), "lam1": np.linspace(0.5, 4, n_pts)}
-    base = dict(lam1=lam1, rho=rho)
-    xlabels = {"rho": r"$\rho$", "lam1": r"$\lambda_1$"}
-    fixed = {"rho": rf"$\lambda_1$={lam1}", "lam1": rf"$\rho$={rho}"}
-    labels = [r"true $\hat x$ (top eigvec of $Y_1$)",
-              r"$m_1 x_1 + \sqrt{1-m_1^2}\, g_\perp$",
-              r"$m_1 x_1$"]
-    colors = ["C0", "C2", "C3"]
+def top_eigen_a_vs_rho(n=500, lam1=2.0, lam2=3.0, mu=0.5, sims=20):
+    rho_values = np.linspace(0, 1, 26)
 
-    out = {}
-    fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
-    for ax, (name, grid) in zip(axes, sweeps.items()):
-        res = np.zeros((len(grid), sims, 3))    # (grid point, simulation, which x)
-        for i, val in enumerate(grid):
-            p = dict(base); p[name] = val
-            for s in range(sims):
-                res[i, s] = sp.top_eig_A_one_draw(n, p["lam1"], lam2, p["rho"], mu, alpha=ALPHA)
-        mean, sem = res.mean(1), res.std(1) / np.sqrt(sims)
-        out[name] = (grid, mean, sem)
-        for k in range(3):
-            ax.errorbar(grid, mean[:, k], sem[:, k], color=colors[k], capsize=2, lw=1.2, label=labels[k])
-        # theory: theta = top eigenvalue of beta, mapped through BBP: theta + 1/theta - 1
-        fine = np.linspace(grid[0], grid[-1], 300)
-        pred = []
-        for val in fine:
-            p = dict(base); p[name] = val
-            m1 = sts.m1_theory(p["lam1"])
-            th = sts.beta_value(mu, p["lam1"], m1, lam2, p["rho"])
-            pred.append(th + 1 / th - 1 if th > 1 else 1.0)
-        ax.plot(fine, pred, "k--", lw=1.5,
-                label=r"theory: $\theta + 1/\theta - 1$, $\theta = \theta_{\max}(\beta)$")
-        if name == "lam1":
-            ax.axvline(1, color="red", ls=":", label=r"BBP threshold $\lambda_1=1$")
-        ax.set_xlabel(xlabels[name])
-        ax.set_ylabel(r"top eigenvalue of $A$")
-        ax.set_title(rf"{fixed[name]}, $\lambda_2$={lam2}, $\mu$={mu}, $n$={n}")
-        ax.grid(); ax.legend(fontsize=8)
-    fig.suptitle(f"all the x and theory over {sims} simulations")
-    fig.tight_layout(); fig.savefig(os.path.join(DIR_PLOTS, "comp_x_hat.png"), dpi=120)
-    plt.close(fig)
-    return out
+    mean_xhat, err_xhat = [], []
+    mean_pg1, err_pg1 = [], []
+    mean_m1, err_m1 = [], []
+    mean_pg12, err_pg12 = [], []
+
+    for rho in rho_values:
+        list_xhat, list_pg1, list_m1, list_pg12 = [], [], [], []
+        for s in range(sims):
+            t_xhat, t_pg1, t_m1, t_pg12 = sp.top_eig_A_one_draw(n, lam1, lam2, rho, mu, alpha=ALPHA)
+            list_xhat.append(t_xhat)
+            list_pg1.append(t_pg1)
+            list_m1.append(t_m1)
+            list_pg12.append(t_pg12)
+        mean_xhat.append(np.mean(list_xhat))
+        err_xhat.append(np.std(list_xhat) / np.sqrt(sims))
+        mean_pg1.append(np.mean(list_pg1))
+        err_pg1.append(np.std(list_pg1) / np.sqrt(sims))
+        mean_m1.append(np.mean(list_m1))
+        err_m1.append(np.std(list_m1) / np.sqrt(sims))
+        mean_pg12.append(np.mean(list_pg12))
+        err_pg12.append(np.std(list_pg12) / np.sqrt(sims))
+
+    rho_fine = np.linspace(0, 1, 300)
+    theory = []
+    for rho in rho_fine:
+        theory.append(sts.top_eig_A_theory(lam1, lam2, rho, mu))
+
+    plt.figure(figsize=(7, 4.8))
+    plt.errorbar(rho_values, mean_xhat, err_xhat, color="C0", marker="o", ms=5, ls="none", capsize=2, label=r"$\lambda_{\max}(A(\hat x))$")
+    plt.errorbar(rho_values, mean_pg1, err_pg1, color="C2", marker="s", ms=5, ls="none", capsize=2, label=r"$\lambda_{\max}(A(x_{pg1}))$")
+    plt.errorbar(rho_values, mean_m1, err_m1, color="C3", marker="^", ms=5, ls="none", capsize=2, label=r"$\lambda_{\max}(A(x_{m1}))$")
+    plt.errorbar(rho_values, mean_pg12, err_pg12, color="C1", marker="+", ms=8, ls="none", capsize=2, label=r"$\lambda_{\max}(A(x_{pg12}))$")
+    plt.plot(rho_fine, theory, "k--", label=r"theory $\theta + 1/\theta - 1$, $\theta = \theta_{\max}(\beta)$")
+    plt.xlabel(r"$\rho$")
+    plt.ylabel(r"top eigenvalue of $A$")
+    plt.title(rf"$\lambda_1$={lam1}, $n$={n}, $\lambda_2$={lam2}, $\mu$={mu}, {sims} sims" + "\n"
+              + r"$A(x) = Y_2 - I + 2\mu F_1(x)$", fontsize=10)
+    plt.grid()
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(os.path.join(DIR_PLOTS, "top_eigen_a_vs_rho.png"), dpi=120)
+    plt.close()
+
+
+def top_eigen_a_vs_lam1(n=500, lam2=3.0, mu=0.5, rho=0.5, sims=20):
+    lam1_values = np.linspace(0.5, 4, 26)
+
+    mean_xhat, err_xhat = [], []
+    mean_pg1, err_pg1 = [], []
+    mean_m1, err_m1 = [], []
+    mean_pg12, err_pg12 = [], []
+
+    for lam1 in lam1_values:
+        list_xhat, list_pg1, list_m1, list_pg12 = [], [], [], []
+        for s in range(sims):
+            t_xhat, t_pg1, t_m1, t_pg12 = sp.top_eig_A_one_draw(n, lam1, lam2, rho, mu, alpha=ALPHA)
+            list_xhat.append(t_xhat)
+            list_pg1.append(t_pg1)
+            list_m1.append(t_m1)
+            list_pg12.append(t_pg12)
+        mean_xhat.append(np.mean(list_xhat))
+        err_xhat.append(np.std(list_xhat) / np.sqrt(sims))
+        mean_pg1.append(np.mean(list_pg1))
+        err_pg1.append(np.std(list_pg1) / np.sqrt(sims))
+        mean_m1.append(np.mean(list_m1))
+        err_m1.append(np.std(list_m1) / np.sqrt(sims))
+        mean_pg12.append(np.mean(list_pg12))
+        err_pg12.append(np.std(list_pg12) / np.sqrt(sims))
+
+    lam1_fine = np.linspace(0.5, 4, 300)
+    theory = []
+    for lam1 in lam1_fine:
+        theory.append(sts.top_eig_A_theory(lam1, lam2, rho, mu))
+
+    plt.figure(figsize=(7, 4.8))
+    plt.errorbar(lam1_values, mean_xhat, err_xhat, color="C0", marker="o", ms=5, ls="none", capsize=2, label=r"$\lambda_{\max}(A(\hat x))$")
+    plt.errorbar(lam1_values, mean_pg1, err_pg1, color="C2", marker="s", ms=5, ls="none", capsize=2, label=r"$\lambda_{\max}(A(x_{pg1}))$")
+    plt.errorbar(lam1_values, mean_m1, err_m1, color="C3", marker="^", ms=5, ls="none", capsize=2, label=r"$\lambda_{\max}(A(x_{m1}))$")
+    plt.errorbar(lam1_values, mean_pg12, err_pg12, color="C1", marker="+", ms=8, ls="none", capsize=2, label=r"$\lambda_{\max}(A(x_{pg12}))$")
+    plt.axvline(1, color="red", ls=":", label=r"BBP threshold $\lambda_1=1$")
+    plt.plot(lam1_fine, theory, "k--", label=r"theory $\theta + 1/\theta - 1$, $\theta = \theta_{\max}(\beta)$")
+    plt.xlabel(r"$\lambda_1$")
+    plt.ylabel(r"top eigenvalue of $A$")
+    plt.title(rf"$\rho$={rho}, $n$={n}, $\lambda_2$={lam2}, $\mu$={mu}, {sims} sims" + "\n"
+              + r"$A(x) = Y_2 - I + 2\mu F_1(x)$", fontsize=10)
+    plt.grid()
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(os.path.join(DIR_PLOTS, "top_eigen_a_vs_lam1.png"), dpi=120)
+    plt.close()
+
+# PLOT DU BULK DES VALEURS PROPRES DE A(x) = Y2 - I + 2 mu F1(x), POUR x = x_hat, x_pg1, x_pg12
+# Theory: bulk = semicircle of Y2 shifted by -1 (the "- I"), so on [-3, 1].
+#         top eigenvalue (outlier) = theta + 1/theta - 1, theta = top eigenvalue of beta (sts.top_eig_A_theory)
+
+def bulk_A(n=2000, lam1=2.0, lam2=3.0, mu=0.5, rho=0.5):
+    eig_xhat, eig_pg1, eig_pg12 = sp.eigvals_A_one_draw(n, lam1, lam2, rho, mu, alpha=ALPHA)
+
+    z = np.linspace(-3.5, 1.5, 500)
+    bulk_theory = sts.semi_circle(z + 1)                     # semicircle shifted by -1
+    top_theory = sts.top_eig_A_theory(lam1, lam2, rho, mu)
+
+    bins = np.linspace(-3.5, 3.0, 100)                       # same bins for the three histograms
+
+    plt.figure(figsize=(8, 5))
+
+    # histograms (outlines only, so that the three stay visible)
+    plt.hist(eig_xhat, bins=bins, density=True, lw=1.5, color="C0", label=r"eigenvalues of $A(\hat x)$")
+    plt.hist(eig_pg1, bins=bins, density=True, lw=1.5, color="C2", label=r"eigenvalues of $A(x_{pg1})$")
+    plt.hist(eig_pg12, bins=bins, density=True, lw=1.5, color="C1", label=r"eigenvalues of $A(x_{pg12})$")
+
+    # top eigenvalue of each, on the x axis
+    plt.plot(eig_xhat[-1], 0, "o", color="C0", ms=7, clip_on=False, label=rf"top eigenvalue of $A(\hat x)$ = {eig_xhat[-1]:.3f}")
+    plt.plot(eig_pg1[-1], 0, "s", color="C2", ms=7, clip_on=False, label=rf"top eigenvalue of $A(x_{{pg1}})$ = {eig_pg1[-1]:.3f}")
+    plt.plot(eig_pg12[-1], 0, "P", color="C1", ms=8, clip_on=False, label=rf"top eigenvalue of $A(x_{{pg12}})$ = {eig_pg12[-1]:.3f}")
+
+    # theory (drawn last)
+    plt.plot(z, bulk_theory, "k-", lw=1.5, label="theory: semicircle shifted by -1")
+    plt.axvline(top_theory, color="k", ls="--", label=f"theory top eigenvalue = {top_theory:.3f}")
+
+    plt.xlabel("eigenvalue")
+    plt.ylabel("density")
+    plt.title(rf"Spectrum of $A(x) = Y_2 - I + 2\mu F_1(x)$" + "\n"
+              + rf"$n$={n}, $\lambda_1$={lam1}, $\lambda_2$={lam2}, $\rho$={rho}, $\mu$={mu}, one draw", fontsize=10)
+    plt.grid()
+    plt.legend(fontsize=7, loc="upper right")
+    plt.tight_layout()
+    plt.savefig(os.path.join(DIR_PLOTS, "bulk_A.png"), dpi=120)
+    plt.close()
 
 
 
 if __name__ == "__main__":
-    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase", "comp_x_hat", "overlap_n", "overlap_rho", "overlap_lam1",
+    todo = sys.argv[1:] or ["eig", "lam", "heat", "phase", "top_eigen_a_rho", "top_eigen_a_lam1", "bulk_A", "overlap_n", "overlap_rho", "overlap_lam1",
                              "overlap_xhat_n", "overlap_xhat_rho", "overlap_xhat_lam1"]
     if "eig" in todo: fig_eig()
     if "lam" in todo: fig_lambda()
     if "heat" in todo: fig_heat()
     if "phase" in todo: fig_phase()
-    if "comp_x_hat" in todo: fig_comp_x_hat()
+    if "top_eigen_a_rho" in todo: top_eigen_a_vs_rho()
+    if "top_eigen_a_lam1" in todo: top_eigen_a_vs_lam1()
+    if "bulk_A" in todo: bulk_A()
     if "overlap_n" in todo: overlap_x1_vs_n()
     if "overlap_rho" in todo: overlap_x1_vs_rho()
     if "overlap_lam1" in todo: overlap_x1_vs_lam1()

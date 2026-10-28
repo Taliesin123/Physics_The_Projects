@@ -241,7 +241,7 @@ def plot_comparison2D(result, vary_param1, vary_param2, method=("A", "B"),
 # ---------------------------------------------------------------- the three choices of x in A = Y2 - I + 2 mu F1(x)
 # overlaps_A_one_draw: used by overlap_x1_vs_n, overlap_x1_vs_rho, overlap_x1_vs_lam1 in plot_maker_tali.py
 # overlaps_xhat_one_draw: used by overlap_xhat_vs_n, overlap_xhat_vs_rho, overlap_xhat_vs_lam1 in plot_maker_tali.py
-# top_eig_A_one_draw:  used by fig_comp_x_hat in plot_maker_tali.py
+# top_eig_A_one_draw:  used by top_eigen_a_vs_rho, top_eigen_a_vs_lam1 in plot_maker_tali.py
 
 def overlaps_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     """One draw. Builds A = Y2 - I + 2 mu F1(x) for the four choices of x
@@ -323,14 +323,16 @@ def overlaps_xhat_one_draw(n, lam1, lam2, rho, alpha=np.sqrt(0.5)):
 
 
 def top_eig_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
-    """One draw. Same three choices of x as overlaps_A_one_draw
+    """One draw. Same four choices of x as overlaps_A_one_draw
          1) the true x_hat (top eigenvector of Y1)
-         2) the BBP surrogate m1 x1 + sqrt(1 - m1^2) g_perp
-         3) m1 x1
+         2) x_pg1  = m1 x1 + sqrt(1 - m1^2) g_perp    (g_perp orthogonal to x1)
+         3) x_m1   = m1 x1
+         4) x_pg12 = m1 x1 + sqrt(1 - m1^2) g_perp12  (g_perp12 orthogonal to x1 and x2)
     but returns the top eigenvalue of A = Y2 - I + 2 mu F1(x) for each of them.
-    All three use the same Y1, Y2."""
+    All four use the same Y1, Y2."""
     S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=alpha)
     x1 = S.get_x1()
+    x2 = S.get_x2()
     m1 = sts.m1_theory(lam1)
 
     # random unit vector orthogonal to x1
@@ -338,16 +340,58 @@ def top_eig_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
     g_perp = g - (g @ x1) * x1
     g_perp = g_perp / np.linalg.norm(g_perp)
 
-    # the three choices of x
+    # random unit vector orthogonal to x1 and x2 (Gram-Schmidt)
+    e2 = x2 - (x2 @ x1) * x1                  # part of x2 orthogonal to x1
+    g_perp12 = g - (g @ x1) * x1
+    if np.linalg.norm(e2) > 1e-8:             # if rho = 1, x2 = x1: nothing more to remove
+        e2 = e2 / np.linalg.norm(e2)
+        g_perp12 = g_perp12 - (g_perp12 @ e2) * e2
+    g_perp12 = g_perp12 / np.linalg.norm(g_perp12)
+
+    # the four choices of x
     _, x_hat = S.top_eigenvector(S.Y1)
-    x_bbp = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp
-    x_m1x1 = m1 * x1
+    x_pg1 = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp
+    x_m1 = m1 * x1
+    x_pg12 = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp12
 
     # top eigenvalue of A for each x (eigvalsh sorts ascending, so [-1] is the top one)
     top_xhat = np.linalg.eigvalsh(S.A(x_hat, mu))[-1]
-    top_bbp = np.linalg.eigvalsh(S.A(x_bbp, mu))[-1]
-    top_m1x1 = np.linalg.eigvalsh(S.A(x_m1x1, mu))[-1]
+    top_pg1 = np.linalg.eigvalsh(S.A(x_pg1, mu))[-1]
+    top_m1 = np.linalg.eigvalsh(S.A(x_m1, mu))[-1]
+    top_pg12 = np.linalg.eigvalsh(S.A(x_pg12, mu))[-1]
 
-    return top_xhat, top_bbp, top_m1x1
+    return top_xhat, top_pg1, top_m1, top_pg12
 
 
+def eigvals_A_one_draw(n, lam1, lam2, rho, mu, alpha=np.sqrt(0.5)):
+    """One draw. Returns ALL the eigenvalues of A = Y2 - I + 2 mu F1(x) for
+         1) x_hat  = top eigenvector of Y1
+         2) x_pg1  = m1 x1 + sqrt(1 - m1^2) g_perp    (g_perp orthogonal to x1)
+         3) x_pg12 = m1 x1 + sqrt(1 - m1^2) g_perp12  (g_perp12 orthogonal to x1 and x2)
+    All three use the same Y1, Y2. Used by bulk_A in plot_maker_tali.py."""
+    S = TwoSpikes(n, lam1, lam2, rho, mu=mu, alpha=alpha)
+    x1 = S.get_x1()
+    x2 = S.get_x2()
+    m1 = sts.m1_theory(lam1)
+
+    # random unit vector orthogonal to x1
+    g = np.random.normal(0, 1, n)
+    g_perp = g - (g @ x1) * x1
+    g_perp = g_perp / np.linalg.norm(g_perp)
+
+    # random unit vector orthogonal to x1 and x2 (Gram-Schmidt)
+    e2 = x2 - (x2 @ x1) * x1                  # part of x2 orthogonal to x1
+    g_perp12 = g - (g @ x1) * x1
+    if np.linalg.norm(e2) > 1e-8:             # if rho = 1, x2 = x1: nothing more to remove
+        e2 = e2 / np.linalg.norm(e2)
+        g_perp12 = g_perp12 - (g_perp12 @ e2) * e2
+    g_perp12 = g_perp12 / np.linalg.norm(g_perp12)
+
+    _, x_hat = S.top_eigenvector(S.Y1)
+    x_pg1 = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp
+    x_pg12 = m1 * x1 + np.sqrt(1 - m1 ** 2) * g_perp12
+
+    eig_xhat = np.linalg.eigvalsh(S.A(x_hat, mu))
+    eig_pg1 = np.linalg.eigvalsh(S.A(x_pg1, mu))
+    eig_pg12 = np.linalg.eigvalsh(S.A(x_pg12, mu))
+    return eig_xhat, eig_pg1, eig_pg12
